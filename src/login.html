@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Trashmandu</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #d0f0c0, #e8f5e9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h2 {
+      color: #2e7d32;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #43a047;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .bottom-text {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .bottom-text a {
+      color: #2e7d32;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Login</h2>
+    <form action="login.php" method="POST">
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <input type="hidden" name="role" value="<?php echo isset($_GET['role']) ? $_GET['role'] : ''; ?>">
+      <button type="submit">Login</button>
+    </form>
+    <div class="bottom-text">
+      Don't have an account? <a href="register.html">Register here</a>
+    </div>
+  </div>
+</body>
+</html>
