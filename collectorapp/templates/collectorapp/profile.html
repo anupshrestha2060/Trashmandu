@@ -1,0 +1,10 @@
+{% if not profile.email_verified %}
+  <form method="POST" action="{% url 'verify-email' %}">
+      {% csrf_token %}
+      <label>Enter Verification Code</label>
+      <input type="text" name="code" maxlength="6" required />
+      <button type="submit">Verify Email</button>
+  </form>
+{% else %}
+  <p style="color: green;">✅ Email Verified</p>
+{% endif %}

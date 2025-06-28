@@ -1,0 +1,107 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Collector Register | Trashmandu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(to right, #d8f3dc, #b7e4c7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .register-box {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            width: 400px;
+            text-align: center;
+        }
+        .register-box h2 {
+            color: #1b4332;
+            margin-bottom: 25px;
+            font-weight: 700;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #95d5b2;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline-offset: 2px;
+            outline-color: transparent;
+            transition: outline-color 0.3s ease;
+        }
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline-color: #52b788;
+        }
+        button {
+            background-color: #40916c;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 700;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2d6a4f;
+        }
+        .message {
+            color: #b00020;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        .login-link {
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        .login-link a {
+            color: #1b4332;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <form method="POST" class="register-box" novalidate>
+        {% csrf_token %}
+        <h2>Create Collector Account</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <input type="text" name="name" placeholder="Full Name" required autofocus />
+        <input type="text" name="username" placeholder="Username" required />
+        <input type="email" name="email" placeholder="Email Address" required />
+        <input type="password" name="password" placeholder="Password" required minlength="6" />
+        <input type="password" name="confirm" placeholder="Confirm Password" required minlength="6" />
+        <button type="submit">Register</button>
+
+        <div class="login-link">
+            Already have an account? <a href="{% url 'collector-login' %}">Login here</a>
+        </div>
+    </form>
+</body>
+</html>

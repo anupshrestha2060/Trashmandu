@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>User Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(to right, #d8f3dc, #b7e4c7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .register-box {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            width: 400px;
+            text-align: center;
+        }
+        .register-box h2 {
+            color: #1b4332;
+            margin-bottom: 25px;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #95d5b2;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        button {
+            background-color: #40916c;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2d6a4f;
+        }
+        .message {
+            color: red;
+            margin: 10px 0;
+        }
+        .login-link {
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        .login-link a {
+            color: #1b4332;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <form method="POST" class="register-box">
+        {% csrf_token %}
+        <h2>Create Your User Account</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <input type="text" name="name" placeholder="Full Name" required />
+        <input type="text" name="username" placeholder="Username" required />
+        <input type="email" name="email" placeholder="Email Address" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <input type="password" name="confirm" placeholder="Confirm Password" required />
+        <button type="submit">Register</button>
+
+        <div class="login-link">
+            Already have an account? <a href="{% url 'user-login' %}">Login here</a>
+        </div>
+    </form>
+</body>
+</html>

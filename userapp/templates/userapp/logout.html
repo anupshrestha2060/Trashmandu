@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Logged Out | User Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(to right, #d8f3dc, #b7e4c7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #1b4332;
+        }
+        .logout-box {
+            background-color: #ffffff;
+            padding: 30px 50px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            width: 400px;
+        }
+        .logout-box h2 {
+            margin-bottom: 20px;
+        }
+        a.button {
+            background-color: #40916c;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1rem;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        a.button:hover {
+            background-color: #2d6a4f;
+        }
+    </style>
+</head>
+<body>
+    <div class="logout-box">
+        <h2>You have been logged out.</h2>
+        <a href="{% url 'user-login' %}" class="button">Login Again</a>
+    </div>
+</body>
+</html>

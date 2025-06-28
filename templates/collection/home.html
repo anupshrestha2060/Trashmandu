@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Trashmandu - Clean Nepal, Green Nepal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(to right, #d9fdd3, #f0fff4);
+            color: #2d6a4f;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px 20px;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #1b4332;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        header p {
+            font-size: 1.25rem;
+            color: #2d6a4f;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .role-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 60px 20px;
+            flex-wrap: wrap;
+        }
+
+        .role-card {
+            background-color: #ffffff;
+            padding: 30px 20px;
+            border-radius: 20px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 260px;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .role-card:hover {
+            transform: translateY(-10px);
+            background-color: #e6ffe6;
+        }
+
+        .role-icon {
+            font-size: 65px;
+            color: #1b4332;
+            margin-bottom: 20px;
+        }
+
+        .role-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1b4332;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .role-card p {
+            font-size: 1rem;
+            color: #344e41;
+            font-weight: 500;
+        }
+
+        .role-card a {
+            display: inline-block;
+            margin-top: 15px;
+            text-decoration: none;
+            color: #ffffff;
+            background-color: #52b788;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            transition: background-color 0.3s ease;
+        }
+
+        .role-card a:hover {
+            background-color: #40916c;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.95rem;
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        footer span {
+            color: #1b4332;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Welcome to Trashmandu</h1>
+        <p><strong>🌿 Together for a Cleaner, Greener Nepal 🌱</strong></p>
+    </header>
+
+    <div class="role-container">
+        <!-- User Role -->
+        <div class="role-card">
+            <div class="role-icon"><i class="fas fa-user-circle"></i></div>
+            <div class="role-title">User</div>
+            <p>Report plastic waste and schedule <strong>eco-friendly pickups</strong> from your home.</p>
+            <a href="{% url 'user-login' %}">Login</a>
+        </div>
+
+        <!-- Collector Role -->
+        <div class="role-card">
+            <div class="role-icon"><i class="fas fa-truck"></i></div>
+            <div class="role-title">Collector</div>
+            <p>Take charge of cleanups and <strong>earn while making Nepal greener</strong>.</p>
+            <a href="{% url 'collector-login' %}">Login</a>
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2025 <span>Trashmandu</span> | Made with ❤️ for a greener future.
+    </footer>
+</body>
+
+</html>

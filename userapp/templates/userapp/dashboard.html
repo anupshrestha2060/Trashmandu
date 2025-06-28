@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>User Dashboard | Trashmandu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(to right, #d8f3dc, #b7e4c7);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: #1b4332;
+        }
+
+        header {
+            padding: 20px;
+            background-color: #52b788;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        header a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            border: 2px solid white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+
+        header a:hover {
+            background-color: white;
+            color: #52b788;
+        }
+
+        main {
+            max-width: 700px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        main h2 {
+            margin-top: 0;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #95d5b2;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        button {
+            margin-top: 25px;
+            background-color: #40916c;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #2d6a4f;
+        }
+
+        #map {
+            height: 300px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #95d5b2;
+            color: #1b4332;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        tr:hover {
+            background-color: #f1f9f1;
+        }
+
+        .status-pending {
+            color: #e07a5f;
+            font-weight: 700;
+        }
+
+        .status-accepted {
+            color: #52b788;
+            font-weight: 700;
+        }
+
+        .status-rejected {
+            color: #b00020;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<script>
+    function calculateTotal() {
+        const weight = parseFloat(document.getElementById('weight').value) || 0;
+        const rate = 9;  // Rs. 9 per kg
+        const total = weight * rate;
+        document.getElementById('totalAmount').innerText = total.toFixed(2);
+        document.getElementById('total').value = total.toFixed(2);
+    }
+</script>
+
+<body>
+<header>
+    <h1>Trashmandu</h1>
+    <a href="{% url 'user-logout' %}">Logout</a>
+</header>
+
+<main>
+    <h2>Welcome to User Dashboard{{ user.first_name }}!</h2>
+    <p>Notify your plastic waste and schedule a pickup.</p>
+
+    <form method="POST" action="{% url 'user-dashboard' %}">
+        {% csrf_token %}
+
+        <label for="phone">Phone Number</label>
+        <input type="text" id="phone" name="phone" placeholder="98XXXXXXXX" required />
+
+        <label for="weight">Plastic Waste Weight (kg)</label>
+        <input type="number" id="weight" name="weight" min="1" required oninput="calculateTotal()" />
+
+        <p><strong>Rate:</strong> Rs. 9 per kg</p>
+
+        <p><strong>Total Amount:</strong> Rs. <span id="totalAmount">0</span></p>
+        <input type="hidden" name="total" id="total" />
+
+        <label for="date">Pickup Date</label>
+        <input type="date" id="date" name="date" required />
+
+        <label for="time">Pickup Time</label>
+        <input type="time" id="time" name="time" required />
+
+        <label for="location">Pickup Location Description</label>
+        <input type="text" id="location" name="location" placeholder="E.g. Tinkune, Bagmati Bridge" required />
+
+        <input type="hidden" id="latitude" name="latitude" />
+        <input type="hidden" id="longitude" name="longitude" />
+
+        <div id="map"></div>
+
+        <button type="submit">Schedule Pickup</button>
+    </form>
+
+    {% if pickup_requests.exists %}
+    <h3>Your Pickup Requests</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Phone</th>
+                <th>Weight (kg)</th>
+                <th>Total Amount</th>
+                <th>Location</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in pickup_requests %}
+            <tr>
+                <td>{{ req.phone }}</td>
+                <td>{{ req.weight }}</td>
+                <td>Rs. {{ req.total_amount }}</td>
+                <td>{{ req.location }}</td>
+                <td>{{ req.scheduled_date }}</td>
+                <td>{{ req.scheduled_time }}</td>
+                <td class="status-{{ req.status|lower }}">{{ req.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>You have no pickup requests yet.</p>
+    {% endif %}
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([27.7172, 85.3240], 13); // Kathmandu default
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const marker = L.marker([27.7172, 85.3240], { draggable: true }).addTo(map)
+        .bindPopup('Drag me to your pickup location!').openPopup();
+
+    function updateCoords(lat, lng) {
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+    }
+
+    marker.on('dragend', function () {
+        const pos = marker.getLatLng();
+        updateCoords(pos.lat.toFixed(6), pos.lng.toFixed(6));
+    });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            map.setView([lat, lng], 15);
+            marker.setLatLng([lat, lng]);
+            updateCoords(lat.toFixed(6), lng.toFixed(6));
+        }, function () {
+            updateCoords(27.7172, 85.3240);
+        });
+    } else {
+        updateCoords(27.7172, 85.3240);
+    }
+</script>
+
+</body>
+</html>
