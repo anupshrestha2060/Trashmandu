@@ -1,5 +1,3 @@
-Absolutely Anup! Here's your complete Trashmandu README.md in copy-paste format:
-
 ♻️ Trashmandu: Smart Plastic Waste Management System
 Trashmandu is a role-based plastic waste collection and recycling platform built using Django. It enables users to schedule plastic waste pickups, get paid based on the weight (e.g., Rs. 12/kg), and allows collectors and admins to manage operations through dedicated dashboards. The project aims to promote environmental responsibility and streamline waste management digitally in Nepal.
 
