@@ -9,5 +9,5 @@ urlpatterns = [
     path('logout/', views.collector_logout, name='collector-logout'),
     path('register/', views.collector_register, name='collector-register'),
     path('profile/', views.collector_profile, name='collector-profile'),
-  #  path('verify-email/', views.verify_email, name='verify-email'),
+    path('verify-email/', views.verify_email, name='verify-email'),
 ]

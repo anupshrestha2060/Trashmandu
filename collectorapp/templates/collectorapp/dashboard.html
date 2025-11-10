@@ -169,6 +169,17 @@
 
   <div class="profile-card">
     <h3>Your Profile</h3>
+    <div style="display:flex; gap:20px; align-items:center; margin-bottom:12px">
+      <div style="flex:1">
+        <strong>Total collected:</strong> <span style="color:#40916c">{{ total_kg_collected|floatformat:2 }} kg</span>
+      </div>
+      <div style="flex:1">
+        <strong>Rate:</strong> Rs. {{ rate_per_kg }} / kg
+      </div>
+      <div style="flex:1">
+        <strong>Net amount:</strong> <span style="color:#1b4332; font-weight:700">Rs. {{ net_amount }}</span>
+      </div>
+    </div>
     <form method="POST" novalidate>
       {% csrf_token %}
       <label for="phone">Phone</label>

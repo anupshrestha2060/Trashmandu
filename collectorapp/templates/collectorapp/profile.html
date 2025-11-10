@@ -1,10 +1,113 @@
-{% if not profile.email_verified %}
-  <form method="POST" action="{% url 'verify-email' %}">
-      {% csrf_token %}
-      <label>Enter Verification Code</label>
-      <input type="text" name="code" maxlength="6" required />
-      <button type="submit">Verify Email</button>
-  </form>
-{% else %}
-  <p style="color: green;">✅ Email Verified</p>
-{% endif %}
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Collector Profile</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
+  <style>
+    body { font-family: 'Montserrat', sans-serif; background: #f4f7f6; color: #1b4332; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    label { display:block; margin-bottom:6px; font-weight:600 }
+    input[type=text], input[type=email], input[type=date], input[type=password] { width:100%; padding:10px; border-radius:6px; border:1px solid #dfe7e0; box-sizing:border-box }
+    button { padding:10px 14px; border:none; background:#40916c; color:white; border-radius:8px; cursor:pointer }
+    .two-col { display:flex; gap:16px }
+    .two-col > div { flex:1 }
+    .small { font-size:0.9rem; color:#555 }
+    .verified { color:green; font-weight:700 }
+    .error { color:red }
+  </style>
+</head>
+<body>
+  <div class="container">
+    {% if messages %}
+      <div class="card">
+        {% for m in messages %}
+          <p class="{{ m.tags }}">{{ m }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="card">
+      <h2>Profile</h2>
+      <p class="small">Username: <strong>{{ user.username }}</strong></p>
+      <p class="small">Name: <strong>{{ user.get_full_name|default:user.username }}</strong></p>
+
+      <form method="POST" action="" style="margin-top:12px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+        <div class="two-col">
+          <div>
+            <label for="phone">Phone</label>
+            <input type="text" id="phone" name="phone" value="{{ profile.phone_number }}">
+          </div>
+          <div>
+            <label for="citizenship">Citizenship ID</label>
+            <input type="text" id="citizenship" name="citizenship" value="{{ profile.citizenship_id }}">
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <label for="dob">Date of Birth</label>
+          <input type="date" id="dob" name="dob" value="{{ profile.date_of_birth }}">
+        </div>
+        <div style="margin-top:12px"><button type="submit">Save Profile</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Email</h2>
+      <p class="small">Current email: <strong>{{ user.email }}</strong>
+        {% if profile.email_verified %}
+          <span class="verified">✅ Verified</span>
+        {% else %}
+          <span class="error">⚠️ Not verified</span>
+        {% endif %}
+      </p>
+
+      <form method="POST" action="" style="margin-top:12px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_email">
+        <label for="new_email">Change email</label>
+        <input type="email" id="new_email" name="new_email" value="{{ user.email }}">
+        <div style="margin-top:12px"><button type="submit">Update Email</button></div>
+      </form>
+
+      <form method="POST" action="" style="margin-top:12px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="request_verification">
+        <button type="submit">Generate new verification code</button>
+        <p class="small">(For development this will store a 6-digit code on your profile.)</p>
+      </form>
+
+      {% if not profile.email_verified %}
+        <hr style="margin:12px 0">
+        <form method="POST" action="{% url 'verify-email' %}">
+          {% csrf_token %}
+          <label>Enter Verification Code</label>
+          <input type="text" name="code" maxlength="6" required />
+          <div style="margin-top:12px"><button type="submit">Verify Email</button></div>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Change Password</h2>
+      <form method="POST" action="">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_password">
+        <label for="current_password">Current password</label>
+        <input type="password" id="current_password" name="current_password">
+
+        <label for="new_password" style="margin-top:8px">New password</label>
+        <input type="password" id="new_password" name="new_password">
+
+        <label for="confirm_password" style="margin-top:8px">Confirm new password</label>
+        <input type="password" id="confirm_password" name="confirm_password">
+
+        <div style="margin-top:12px"><button type="submit">Change Password</button></div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
