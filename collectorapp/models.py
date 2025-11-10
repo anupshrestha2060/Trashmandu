@@ -8,8 +8,6 @@ class CollectorProfile(models.Model):
     phone_number = models.CharField(max_length=20, null=False, default='N/A')  # default phone
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     citizenship_id = models.CharField(max_length=20, default='NA')
-    email_verified = models.BooleanField(default=False)
-    verification_code = models.CharField(max_length=6, blank=True, default='')  # <-- Add default here!
     def is_adult(self):
         return (date.today().year - self.date_of_birth.year) >= 18
 

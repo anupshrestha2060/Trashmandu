@@ -11,6 +11,8 @@ from django.db import transaction, IntegrityError
 from django.views.decorators.http import require_POST
 import random
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import login as auth_login
+from django.contrib.auth import authenticate
 
 from .models import CollectorProfile
 from userapp.models import PickupRequest
@@ -160,10 +162,6 @@ def collector_register(request):
             # Another process created the profile concurrently — fetch it.
             profile = CollectorProfile.objects.get(user=user)
 
-        if not profile.email_verified:
-            profile.email_verified = True
-            profile.save()
-
         messages.success(request, 'Collector account created successfully. Please log in.')
         return redirect('collector-login')
 
@@ -236,6 +234,16 @@ def collector_profile(request):
             profile.email_verified = False
             profile.verification_code = str(random.randint(100000, 999999))
             profile.save()
+            # send verification email
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                subject = 'Verify your Collector account on Trashmandu'
+                message = f"Hi {user.get_full_name() or user.username},\n\nYour collector verification code is: {profile.verification_code}\n\nEnter this code on your profile page to verify your email.\n\nThanks,\nTrashmandu Team"
+                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@example.com'
+                send_mail(subject, message, from_email, [user.email], fail_silently=True)
+            except Exception:
+                pass
             messages.success(request, "Email updated. A new verification code was generated.")
             return redirect('collector-profile')
 
@@ -244,7 +252,17 @@ def collector_profile(request):
             profile.verification_code = str(random.randint(100000, 999999))
             profile.email_verified = False
             profile.save()
-            messages.success(request, "A new verification code has been generated.")
+            # email the code to the collector
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                subject = 'Your new verification code for Trashmandu'
+                message = f"Hi {request.user.get_full_name() or request.user.username},\n\nYour new verification code is: {profile.verification_code}\n\nEnter this code on your profile page to verify your email.\n\nThanks,\nTrashmandu Team"
+                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@example.com'
+                send_mail(subject, message, from_email, [request.user.email], fail_silently=True)
+            except Exception:
+                pass
+            messages.success(request, "A new verification code has been generated and emailed.")
             return redirect('collector-profile')
 
     return render(request, 'collectorapp/profile.html', {'profile': profile, 'user': request.user})
@@ -268,3 +286,46 @@ def verify_email(request):
         messages.error(request, "Invalid verification code.")
 
     return redirect('collector-profile')
+
+
+def collector_public_verify(request):
+    """Public endpoint: accept username + code, verify collector email, log them in and force password set."""
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        code = request.POST.get('code')
+        try:
+            user = User.objects.get(username=username)
+            profile = getattr(user, 'collectorprofile', None)
+            if profile and str(profile.verification_code) == str(code):
+                profile.email_verified = True
+                profile.save()
+                # log user in and force password set
+                auth_login(request, user)
+                request.session['must_set_password'] = True
+                messages.success(request, 'Email verified. Please set your password.')
+                return redirect('collector-set-password')
+            else:
+                messages.error(request, 'Invalid verification code or collector not found.')
+        except User.DoesNotExist:
+            messages.error(request, 'User not found.')
+    return render(request, 'collectorapp/verify_login.html')
+
+
+@login_required
+def collector_set_password(request):
+    # Allow collector to set password after code-login
+    if request.method == 'POST':
+        new = request.POST.get('new_password')
+        confirm = request.POST.get('confirm_password')
+        if not new or new != confirm:
+            messages.error(request, 'Passwords do not match.')
+            return redirect('collector-set-password')
+        user = request.user
+        user.set_password(new)
+        user.save()
+        request.session.pop('must_set_password', None)
+        # re-login to refresh session
+        auth_login(request, user)
+        messages.success(request, 'Password set successfully.')
+        return redirect('collector-dashboard')
+    return render(request, 'collectorapp/set_password.html')

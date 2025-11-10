@@ -226,7 +226,7 @@
                   {% if req.status == 'Pending' %}
                     <a href="{% url 'accept-request' req.id %}" class="btn-accept">Accept</a>
                     <a href="{% url 'reject-request' req.id %}" class="btn-reject">Reject</a>
-                  {% elif req.status == 'Accepted' and req.assigned_collector == user %}
+                  {% elif req.status == 'Accepted' and per_collector_available and req.assigned_collector == user %}
                     <a href="{% url 'reject-request' req.id %}" class="btn-reject">Reject</a>
                   {% else %}
                     <span style="color:#555;">No actions</span>

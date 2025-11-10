@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="max-width:600px;margin:40px auto;background:white;padding:20px;border-radius:8px;">
+  <h2>Verify your email</h2>
+  <form method="POST">
+    {% csrf_token %}
+    <label>Username</label>
+    <input type="text" name="username" required />
+    <label>Verification code</label>
+    <input type="text" name="code" required />
+    <button type="submit">Verify</button>
+  </form>
+</div>
+{% endblock %}

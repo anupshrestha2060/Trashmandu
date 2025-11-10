@@ -100,10 +100,6 @@ MESSAGE_TAGS = {
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/collector/login/'
 LOGOUT_REDIRECT_URL = '/collector/login/'
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'yourgmail@gmail.com'
-EMAIL_HOST_PASSWORD = 'your_app_password_here'  # <- use the 16-char password
-DEFAULT_FROM_EMAIL = 'Trashmandu <yourgmail@gmail.com>'
+# Development: print emails to console
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Trashmandu <no-reply@trashmandu.com>'

@@ -4,11 +4,82 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from .models import PickupRequest
-from datetime import datetime
+from .models import UserProfile
+from django.core.mail import send_mail
+from django.conf import settings
+from datetime import datetime, timedelta
+import uuid
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import PickupRequest
+from django.utils import timezone
+
+def forgot_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            # Generate a temporary password
+            temp_password = str(uuid.uuid4())[:8]  # First 8 characters of UUID
+            user.set_password(temp_password)
+            user.save()
+            
+            # Send new password by email
+            subject = 'Your New Trashmandu Password'
+            message = f'''Hi {user.get_full_name() or user.username},
+
+Your temporary password is: {temp_password}
+
+Please login with this password and change it immediately.
+
+Thanks,
+Trashmandu Team'''
+            
+            from_email = settings.DEFAULT_FROM_EMAIL
+            send_mail(subject, message, from_email, [user.email], fail_silently=False)
+            messages.success(request, "If the email exists in our system, you will receive your new password by email.")
+            return redirect('user-login')
+            
+        except User.DoesNotExist:
+            # Don't reveal if email exists or not
+            messages.success(request, "If the email exists in our system, you will receive your new password by email.")
+            return redirect('user-login')
+            
+    return render(request, 'userapp/password/forgot_password.html')
+
+def reset_password(request, token):
+    try:
+        profile = UserProfile.objects.get(reset_token=token)
+        if profile.reset_token_expiry and profile.reset_token_expiry < timezone.now():
+            messages.error(request, "Password reset link has expired. Please request a new one.")
+            return redirect('forgot-password')
+            
+        if request.method == 'POST':
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            if new_password != confirm_password:
+                messages.error(request, "Passwords do not match.")
+                return redirect('reset-password', token=token)
+            
+            user = profile.user
+            user.set_password(new_password)
+            user.save()
+            
+            # Clear the reset token
+            profile.reset_token = ''
+            profile.reset_token_expiry = None
+            profile.save()
+            
+            messages.success(request, "Password reset successfully. Please login with your new password.")
+            return redirect('user-login')
+            
+        return render(request, 'userapp/password/reset_password.html')
+        
+    except UserProfile.DoesNotExist:
+        messages.error(request, "Invalid password reset link.")
+        return redirect('user-login')
 from datetime import datetime
 def user_login(request):
     if request.method == 'POST':
@@ -41,6 +112,11 @@ def user_register(request):
 
         user = User.objects.create_user(username=username, email=email, password=password, first_name=name)
         user.save()
+        # Create user profile
+        try:
+            profile = user.userprofile
+        except Exception:
+            profile = UserProfile.objects.create(user=user)
         messages.success(request, "Account created successfully. Please log in.")
         return redirect('user-login')
 
@@ -133,3 +209,48 @@ def pickup_request(request):
             messages.error(request, "Please fill all fields.")
 
     return render(request, 'userapp/pickup_request.html')
+
+
+def user_verify_email(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        code = request.POST.get('code')
+        try:
+            user = User.objects.get(username=username)
+            profile = user.userprofile
+            if str(profile.verification_code) == str(code):
+                profile.email_verified = True
+                profile.save()
+                # Log the user in and require password set if needed
+                login(request, user)
+                request.session['must_set_password'] = True
+                messages.success(request, 'Email verified successfully. Please set your password.')
+                return redirect('user-set-password')
+            else:
+                messages.error(request, 'Invalid verification code.')
+        except User.DoesNotExist:
+            messages.error(request, 'User not found.')
+        except Exception:
+            messages.error(request, 'Verification failed. Please contact support.')
+    return render(request, 'userapp/verify_email.html')
+
+
+@login_required(login_url='user-login')
+def user_set_password(request):
+    # allow access if session flag present or user already verified
+    if request.method == 'POST':
+        new = request.POST.get('new_password')
+        confirm = request.POST.get('confirm_password')
+        if not new or new != confirm:
+            messages.error(request, 'Passwords do not match.')
+            return redirect('user-set-password')
+        user = request.user
+        user.set_password(new)
+        user.save()
+        # clear session flag
+        request.session.pop('must_set_password', None)
+        messages.success(request, 'Password set successfully. You are now logged in.')
+        # re-login to update session auth hash
+        login(request, user)
+        return redirect('user-dashboard')
+    return render(request, 'userapp/set_password.html')
