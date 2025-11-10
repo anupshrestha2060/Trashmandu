@@ -16,7 +16,7 @@ from django.contrib.auth import authenticate
 
 from .models import CollectorProfile
 from userapp.models import PickupRequest
-from django.db.models import Sum
+from django.db.models import Sum, F, ExpressionWrapper, FloatField
 
 # Age validation function
 def validate_age(value):
@@ -53,8 +53,12 @@ class CollectorLoginView(LoginView):
 # Collector dashboard view
 @login_required
 def collector_dashboard(request):
+    # Annotate pickup requests with total weight and total amount (from related PlasticItem)
     pickup_requests = PickupRequest.objects.filter(
         status='Pending'
+    ).annotate(
+        total_weight=Sum('plasticitem__weight'),
+        total_amount=Sum(ExpressionWrapper(F('plasticitem__weight') * F('plasticitem__price_at_time'), output_field=FloatField()))
     ).order_by('-scheduled_date', '-scheduled_time')
 
     profile = getattr(request.user, 'collectorprofile', None)
@@ -64,7 +68,11 @@ def collector_dashboard(request):
 
     # Calculate total kilograms collected by this collector (accepted requests)
     if per_collector_available:
-        total_kg = PickupRequest.objects.filter(assigned_collector=request.user, status='Accepted').aggregate(total=Sum('weight'))['total'] or 0.0
+        # assigned_collector references CollectorProfile, not User
+        if profile:
+            total_kg = PickupRequest.objects.filter(assigned_collector=profile, status='Accepted').aggregate(total=Sum('plasticitem__weight'))['total'] or 0.0
+        else:
+            total_kg = 0.0
     else:
         # assigned_collector not present; per-collector totals not available
         total_kg = 0.0
@@ -93,12 +101,22 @@ def accept_request(request, request_id):
         pickup_request.status = 'Accepted'
         if 'assigned_collector' in field_names:
             try:
-                setattr(pickup_request, 'assigned_collector', request.user)
+                # assigned_collector is a FK to CollectorProfile
+                collector_profile = getattr(request.user, 'collectorprofile', None)
+                if collector_profile:
+                    setattr(pickup_request, 'assigned_collector', collector_profile)
             except Exception:
                 # If assignment fails for any reason, ignore and proceed with status change
                 pass
         pickup_request.save()
-        messages.success(request, "Request accepted successfully.")
+        # Recalculate collector totals (gross kilograms and net amount)
+        collector_profile = getattr(request.user, 'collectorprofile', None)
+        total_kg = 0.0
+        if collector_profile:
+            total_kg = PickupRequest.objects.filter(assigned_collector=collector_profile, status='Accepted').aggregate(total=Sum('plasticitem__weight'))['total'] or 0.0
+        rate_per_kg = 9.0
+        net_amount = round(total_kg * rate_per_kg, 2)
+        messages.success(request, f"Request accepted. Gross collected: {total_kg:.2f} kg — Net amount: Rs. {net_amount:.2f}")
     else:
         messages.error(request, "This request cannot be accepted.")
     return redirect('collector-dashboard')
@@ -114,7 +132,9 @@ def reject_request(request, request_id):
         allowed = True
     elif pickup_request.status == 'Accepted' and 'assigned_collector' in field_names:
         try:
-            if getattr(pickup_request, 'assigned_collector') == request.user:
+            assigned = getattr(pickup_request, 'assigned_collector')
+            # assigned is a CollectorProfile instance; compare its user
+            if assigned and getattr(assigned, 'user', None) == request.user:
                 allowed = True
         except Exception:
             allowed = False
@@ -149,25 +169,28 @@ def collector_register(request):
             messages.error(request, 'Username already exists')
             return redirect('collector-register')
 
-        user = User.objects.create_user(username=username, email=email, password=password)
-
-        # A post_save signal may already create a CollectorProfile for this user.
-        # Use an atomic block and handle IntegrityError to avoid UNIQUE constraint
-        # failures in the rare race where the signal and this view both try to
-        # create the profile at the same time.
         try:
             with transaction.atomic():
-                profile, created = CollectorProfile.objects.get_or_create(user=user)
-        except IntegrityError:
-            # Another process created the profile concurrently — fetch it.
-            profile = CollectorProfile.objects.get(user=user)
+                # Create user first
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password
+                )
+                # Then create the collector profile
+                CollectorProfile.objects.create(user=user)
 
-        messages.success(request, 'Collector account created successfully. Please log in.')
-        return redirect('collector-login')
+            messages.success(request, 'Collector account created successfully. Please log in.')
+            return redirect('collector-login')
+
+        except IntegrityError:
+            messages.error(request, 'Error creating collector account')
+            return redirect('collector-register')
 
     return render(request, 'collectorapp/register.html')
 
-# Collector profile update
+
+# Collector profile update (without any email verification flow)
 @login_required
 def collector_profile(request):
     profile = request.user.collectorprofile
@@ -221,7 +244,7 @@ def collector_profile(request):
             messages.success(request, "Password changed successfully.")
             return redirect('collector-profile')
 
-        # Change email
+        # Change email (no verification)
         if action == 'change_email':
             new_email = request.POST.get('new_email')
             if not new_email or '@' not in new_email:
@@ -230,102 +253,9 @@ def collector_profile(request):
             user = request.user
             user.email = new_email
             user.save()
-            # mark not verified and generate a new code
-            profile.email_verified = False
-            profile.verification_code = str(random.randint(100000, 999999))
-            profile.save()
-            # send verification email
-            try:
-                from django.core.mail import send_mail
-                from django.conf import settings
-                subject = 'Verify your Collector account on Trashmandu'
-                message = f"Hi {user.get_full_name() or user.username},\n\nYour collector verification code is: {profile.verification_code}\n\nEnter this code on your profile page to verify your email.\n\nThanks,\nTrashmandu Team"
-                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@example.com'
-                send_mail(subject, message, from_email, [user.email], fail_silently=True)
-            except Exception:
-                pass
-            messages.success(request, "Email updated. A new verification code was generated.")
-            return redirect('collector-profile')
-
-        # Request new verification code (without changing email)
-        if action == 'request_verification':
-            profile.verification_code = str(random.randint(100000, 999999))
-            profile.email_verified = False
-            profile.save()
-            # email the code to the collector
-            try:
-                from django.core.mail import send_mail
-                from django.conf import settings
-                subject = 'Your new verification code for Trashmandu'
-                message = f"Hi {request.user.get_full_name() or request.user.username},\n\nYour new verification code is: {profile.verification_code}\n\nEnter this code on your profile page to verify your email.\n\nThanks,\nTrashmandu Team"
-                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@example.com'
-                send_mail(subject, message, from_email, [request.user.email], fail_silently=True)
-            except Exception:
-                pass
-            messages.success(request, "A new verification code has been generated and emailed.")
+            messages.success(request, "Email updated successfully.")
             return redirect('collector-profile')
 
     return render(request, 'collectorapp/profile.html', {'profile': profile, 'user': request.user})
 
-
-@require_POST
-@login_required
-def verify_email(request):
-    """Verify collector email using a code posted from the profile form."""
-    profile = getattr(request.user, 'collectorprofile', None)
-    if not profile:
-        messages.error(request, "No collector profile found.")
-        return redirect('collector-profile')
-
-    code = request.POST.get('code')
-    if code and str(getattr(profile, 'verification_code', '')) == str(code):
-        profile.email_verified = True
-        profile.save()
-        messages.success(request, "Email verified successfully.")
-    else:
-        messages.error(request, "Invalid verification code.")
-
-    return redirect('collector-profile')
-
-
-def collector_public_verify(request):
-    """Public endpoint: accept username + code, verify collector email, log them in and force password set."""
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        code = request.POST.get('code')
-        try:
-            user = User.objects.get(username=username)
-            profile = getattr(user, 'collectorprofile', None)
-            if profile and str(profile.verification_code) == str(code):
-                profile.email_verified = True
-                profile.save()
-                # log user in and force password set
-                auth_login(request, user)
-                request.session['must_set_password'] = True
-                messages.success(request, 'Email verified. Please set your password.')
-                return redirect('collector-set-password')
-            else:
-                messages.error(request, 'Invalid verification code or collector not found.')
-        except User.DoesNotExist:
-            messages.error(request, 'User not found.')
-    return render(request, 'collectorapp/verify_login.html')
-
-
-@login_required
-def collector_set_password(request):
-    # Allow collector to set password after code-login
-    if request.method == 'POST':
-        new = request.POST.get('new_password')
-        confirm = request.POST.get('confirm_password')
-        if not new or new != confirm:
-            messages.error(request, 'Passwords do not match.')
-            return redirect('collector-set-password')
-        user = request.user
-        user.set_password(new)
-        user.save()
-        request.session.pop('must_set_password', None)
-        # re-login to refresh session
-        auth_login(request, user)
-        messages.success(request, 'Password set successfully.')
-        return redirect('collector-dashboard')
-    return render(request, 'collectorapp/set_password.html')
+# Verification-related endpoints were removed — verification is not used.

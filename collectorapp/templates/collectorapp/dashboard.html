@@ -188,7 +188,7 @@
       <label for="address">Address</label>
       <input type="text" id="address" name="address" value="{{ profile.address }}" required />
 
-      <button type="submit" name="update_profile">Update Profile</button>
+
     </form>
   </div>
 
@@ -215,8 +215,8 @@
             <tr>
               <td>{{ req.user.username }}</td>
               <td>{{ req.phone }}</td>
-              <td>{{ req.weight }}</td>
-              <td>Rs. {{ req.total_amount }}</td>
+              <td>{{ req.total_weight|default:0 }}</td>
+              <td>Rs. {{ req.total_amount|default:0 }}</td>
               <td>{{ req.location }}</td>
               <td>{{ req.scheduled_date|date:"F d, Y" }}</td>
               <td>{{ req.scheduled_time|time:"g:i a" }}</td>
@@ -226,7 +226,7 @@
                   {% if req.status == 'Pending' %}
                     <a href="{% url 'accept-request' req.id %}" class="btn-accept">Accept</a>
                     <a href="{% url 'reject-request' req.id %}" class="btn-reject">Reject</a>
-                  {% elif req.status == 'Accepted' and per_collector_available and req.assigned_collector == user %}
+                  {% elif req.status == 'Accepted' and per_collector_available and req.assigned_collector.user == user %}
                     <a href="{% url 'reject-request' req.id %}" class="btn-reject">Reject</a>
                   {% else %}
                     <span style="color:#555;">No actions</span>

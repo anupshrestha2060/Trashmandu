@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from .models import PickupRequest
+from .models import PickupRequest, PlasticItem, PlasticType
 from .models import UserProfile
 from django.core.mail import send_mail
 from django.conf import settings
@@ -146,19 +146,30 @@ def user_dashboard(request):
 
             scheduled_date = datetime.strptime(date, '%Y-%m-%d').date()
             scheduled_time = datetime.strptime(time, '%H:%M').time()
-            total_amount = weight_val * RATE_PER_KG
 
-            PickupRequest.objects.create(
+            # Create PickupRequest (no weight/total_amount fields on model)
+            pickup = PickupRequest.objects.create(
                 user=request.user,
                 phone=phone,
-                weight=weight_val,
-                total_amount=total_amount,
                 location=location,
                 scheduled_date=scheduled_date,
                 scheduled_time=scheduled_time,
                 latitude=latitude or None,
                 longitude=longitude or None,
                 status='Pending'
+            )
+
+            # Ensure a PlasticType exists; fall back to a default if not
+            plastic_type = PlasticType.objects.first()
+            if not plastic_type:
+                plastic_type = PlasticType.objects.create(name='Mixed', price_per_kg=RATE_PER_KG)
+
+            # Create a PlasticItem for this pickup
+            PlasticItem.objects.create(
+                pickup_request=pickup,
+                plastic_type=plastic_type,
+                weight=weight_val,
+                price_at_time=plastic_type.price_per_kg
             )
 
             messages.success(request, "Pickup request scheduled successfully!")
@@ -168,7 +179,12 @@ def user_dashboard(request):
             messages.error(request, f"Invalid input: {str(e)}")
             return redirect('user-dashboard')
 
-    pickup_requests = PickupRequest.objects.filter(user=request.user).order_by('-scheduled_date', '-scheduled_time')
+    # Annotate pickup requests with totals from related PlasticItem rows
+    from django.db.models import Sum, F, ExpressionWrapper, FloatField
+    pickup_requests = PickupRequest.objects.filter(user=request.user).annotate(
+        total_weight=Sum('plasticitem__weight'),
+        total_amount=Sum(ExpressionWrapper(F('plasticitem__weight') * F('plasticitem__price_at_time'), output_field=FloatField()))
+    ).order_by('-scheduled_date', '-scheduled_time')
 
     return render(request, 'userapp/dashboard.html', {'pickup_requests': pickup_requests})
 
@@ -191,15 +207,25 @@ def pickup_request(request):
 
         if weight and location and date and time:
             try:
-                PickupRequest.objects.create(
+                # create PickupRequest and associated PlasticItem
+                pickup = PickupRequest.objects.create(
                     user=request.user,
-                    weight=float(weight),
+                    phone=phone,
                     location=location,
                     scheduled_date=datetime.strptime(date, '%Y-%m-%d').date(),
                     scheduled_time=datetime.strptime(time, '%H:%M').time(),
                     latitude=latitude or None,
                     longitude=longitude or None,
                     status='Pending'
+                )
+                plastic_type = PlasticType.objects.first()
+                if not plastic_type:
+                    plastic_type = PlasticType.objects.create(name='Mixed', price_per_kg=9)
+                PlasticItem.objects.create(
+                    pickup_request=pickup,
+                    plastic_type=plastic_type,
+                    weight=float(weight),
+                    price_at_time=plastic_type.price_per_kg
                 )
                 messages.success(request, "Pickup request submitted successfully!")
                 return redirect('user-dashboard')
@@ -211,46 +237,12 @@ def pickup_request(request):
     return render(request, 'userapp/pickup_request.html')
 
 
-def user_verify_email(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        code = request.POST.get('code')
-        try:
-            user = User.objects.get(username=username)
-            profile = user.userprofile
-            if str(profile.verification_code) == str(code):
-                profile.email_verified = True
-                profile.save()
-                # Log the user in and require password set if needed
-                login(request, user)
-                request.session['must_set_password'] = True
-                messages.success(request, 'Email verified successfully. Please set your password.')
-                return redirect('user-set-password')
-            else:
-                messages.error(request, 'Invalid verification code.')
-        except User.DoesNotExist:
-            messages.error(request, 'User not found.')
-        except Exception:
-            messages.error(request, 'Verification failed. Please contact support.')
-    return render(request, 'userapp/verify_email.html')
+# Removing unused email verification view since verification is not implemented
+# def user_verify_email(request):
+#     pass
 
 
-@login_required(login_url='user-login')
-def user_set_password(request):
-    # allow access if session flag present or user already verified
-    if request.method == 'POST':
-        new = request.POST.get('new_password')
-        confirm = request.POST.get('confirm_password')
-        if not new or new != confirm:
-            messages.error(request, 'Passwords do not match.')
-            return redirect('user-set-password')
-        user = request.user
-        user.set_password(new)
-        user.save()
-        # clear session flag
-        request.session.pop('must_set_password', None)
-        messages.success(request, 'Password set successfully. You are now logged in.')
-        # re-login to update session auth hash
-        login(request, user)
-        return redirect('user-dashboard')
-    return render(request, 'userapp/set_password.html')
+# Removing unused password set view since it's handled in registration
+# @login_required(login_url='user-login')
+# def user_set_password(request):
+#     pass

@@ -9,14 +9,9 @@ from django.conf import settings
 @receiver(post_save, sender=User)
 def create_collector_profile(sender, instance, created, **kwargs):
     if created:
-        code = str(random.randint(100000, 999999))
-        profile = CollectorProfile.objects.create(user=instance, verification_code=code)
-        # Send verification email if the user has an email address
-        if instance.email:
-            subject = 'Verify your Collector account on Trashmandu'
-            message = f"Hi {instance.get_full_name() or instance.username},\n\nYour collector verification code is: {code}\n\nEnter this code on your profile page to verify your email.\n\nThanks,\nTrashmandu Team"
-            from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@example.com'
-            try:
-                send_mail(subject, message, from_email, [instance.email], fail_silently=False)
-            except Exception:
-                pass
+        # Create a CollectorProfile for the user. Verification is not used in this project.
+        try:
+            CollectorProfile.objects.create(user=instance)
+        except Exception:
+            # If creation fails for any reason, don't block user creation
+            pass

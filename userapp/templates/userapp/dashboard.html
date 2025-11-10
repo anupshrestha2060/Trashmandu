@@ -97,17 +97,24 @@
             margin-top: 20px;
         }
 
-        table {
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .pickup-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 30px;
             box-shadow: 0 0 15px rgba(0,0,0,0.05);
+            table-layout: fixed; /* helps columns fit */
         }
 
-        th, td {
-            padding: 12px 10px;
+        .pickup-table th, .pickup-table td {
+            padding: 10px 8px;
             border-bottom: 1px solid #ddd;
             text-align: left;
+            vertical-align: middle;
+            font-size: 0.95rem;
         }
 
         th {
@@ -115,6 +122,7 @@
             color: #1b4332;
             font-weight: 700;
             text-transform: uppercase;
+            font-size: 0.85rem;
         }
 
         tr:hover {
@@ -134,6 +142,35 @@
         .status-rejected {
             color: #b00020;
             font-weight: 700;
+        }
+        /* column widths to make table fit nicely */
+        .pickup-table colgroup col:nth-child(1) { width: 12%; } /* Phone */
+        .pickup-table colgroup col:nth-child(2) { width: 8%; }  /* Weight */
+        .pickup-table colgroup col:nth-child(3) { width: 10%; } /* Total */
+        .pickup-table colgroup col:nth-child(4) { width: 20%; } /* Collector */
+        .pickup-table colgroup col:nth-child(5) { width: 20%; } /* Location */
+        .pickup-table colgroup col:nth-child(6) { width: 10%; } /* Date */
+        .pickup-table colgroup col:nth-child(7) { width: 8%; }  /* Time */
+        .pickup-table colgroup col:nth-child(8) { width: 12%; } /* Status */
+
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+
+        .collector-cell {
+            font-size: 0.95rem;
+            color: #344e41;
+        }
+
+        @media (max-width: 800px) {
+            .pickup-table colgroup col:nth-child(4),
+            .pickup-table colgroup col:nth-child(5) {
+                width: 30%;
+            }
+            .pickup-table th, .pickup-table td { font-size: 0.9rem; padding: 8px; }
         }
     </style>
 </head>
@@ -197,6 +234,7 @@
                 <th>Phone</th>
                 <th>Weight (kg)</th>
                 <th>Total Amount</th>
+                <th>Collector</th>
                 <th>Location</th>
                 <th>Date</th>
                 <th>Time</th>
@@ -207,8 +245,16 @@
             {% for req in pickup_requests %}
             <tr>
                 <td>{{ req.phone }}</td>
-                <td>{{ req.weight }}</td>
-                <td>Rs. {{ req.total_amount }}</td>
+                <td>{{ req.total_weight|default:0 }}</td>
+                <td>Rs. {{ req.total_amount|default:0 }}</td>
+                <td>
+                    {% if req.assigned_collector and req.status == 'Accepted' %}
+                        {{ req.assigned_collector.user.get_full_name|default:req.assigned_collector.user.username }}<br>
+                        <small>{{ req.assigned_collector.phone_number }}</small>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td>{{ req.location }}</td>
                 <td>{{ req.scheduled_date }}</td>
                 <td>{{ req.scheduled_time }}</td>

@@ -40,7 +40,7 @@ print('--- response body (first 1000 chars) ---')
 print(resp.content.decode(errors='replace')[:1000])
 
 # Now create a collector profile and try again
-profile, pcreated = CollectorProfile.objects.get_or_create(user=user, defaults={'email_verified': True})
+profile, pcreated = CollectorProfile.objects.get_or_create(user=user)
 print('CollectorProfile created:', pcreated)
 
 resp2 = c.post('/collector/login/', {'username': username, 'password': password}, follow=True, HTTP_HOST='127.0.0.1')

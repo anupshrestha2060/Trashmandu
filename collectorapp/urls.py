@@ -9,7 +9,5 @@ urlpatterns = [
     path('logout/', views.collector_logout, name='collector-logout'),
     path('register/', views.collector_register, name='collector-register'),
     path('profile/', views.collector_profile, name='collector-profile'),
-    path('verify-email/', views.verify_email, name='verify-email'),
-    path('verify-login/', views.collector_public_verify, name='collector-verify-login'),
-    path('set-password/', views.collector_set_password, name='collector-set-password'),
+    # Verification endpoints removed — not used in current flow
 ]

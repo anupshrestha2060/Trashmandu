@@ -29,41 +29,11 @@
       </div>
     {% endif %}
 
-    <div class="card">
-      <h2>Profile</h2>
-      <p class="small">Username: <strong>{{ user.username }}</strong></p>
-      <p class="small">Name: <strong>{{ user.get_full_name|default:user.username }}</strong></p>
-
-      <form method="POST" action="" style="margin-top:12px">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="update_profile">
-        <div class="two-col">
-          <div>
-            <label for="phone">Phone</label>
-            <input type="text" id="phone" name="phone" value="{{ profile.phone_number }}">
-          </div>
-          <div>
-            <label for="citizenship">Citizenship ID</label>
-            <input type="text" id="citizenship" name="citizenship" value="{{ profile.citizenship_id }}">
-          </div>
-        </div>
-        <div style="margin-top:12px">
-          <label for="dob">Date of Birth</label>
-          <input type="date" id="dob" name="dob" value="{{ profile.date_of_birth }}">
-        </div>
-        <div style="margin-top:12px"><button type="submit">Save Profile</button></div>
-      </form>
-    </div>
+    {# Profile update removed per request - profile editing handled elsewhere or disabled #}
 
     <div class="card">
       <h2>Email</h2>
-      <p class="small">Current email: <strong>{{ user.email }}</strong>
-        {% if profile.email_verified %}
-          <span class="verified">✅ Verified</span>
-        {% else %}
-          <span class="error">⚠️ Not verified</span>
-        {% endif %}
-      </p>
+      <p class="small">Current email: <strong>{{ user.email }}</strong></p>
 
       <form method="POST" action="" style="margin-top:12px">
         {% csrf_token %}
@@ -72,23 +42,6 @@
         <input type="email" id="new_email" name="new_email" value="{{ user.email }}">
         <div style="margin-top:12px"><button type="submit">Update Email</button></div>
       </form>
-
-      <form method="POST" action="" style="margin-top:12px">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="request_verification">
-        <button type="submit">Generate new verification code</button>
-        <p class="small">(For development this will store a 6-digit code on your profile.)</p>
-      </form>
-
-      {% if not profile.email_verified %}
-        <hr style="margin:12px 0">
-        <form method="POST" action="{% url 'verify-email' %}">
-          {% csrf_token %}
-          <label>Enter Verification Code</label>
-          <input type="text" name="code" maxlength="6" required />
-          <div style="margin-top:12px"><button type="submit">Verify Email</button></div>
-        </form>
-      {% endif %}
     </div>
 
     <div class="card">
