@@ -1,41 +1,81 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">User Login</div>
-                <div class="card-body">
-                    {% if messages %}
-                    <div class="messages">
-                        {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }}">
-                            {{ message }}
-                        </div>
-                        {% endfor %}
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        Welcome to Trashmandu
                     </div>
-                    {% endif %}
-                    <form method="POST">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" name="username" required>
+                    <div class="auth-body">
+                        <div class="auth-type-icon">
+                            <i class="fas fa-user-circle"></i>
                         </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                        {% if messages %}
+                        <div class="messages">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            {% endfor %}
                         </div>
-                        <button type="submit" class="btn btn-primary">Login</button>
-                        <a href="{% url 'forgot-password' %}" class="btn btn-link">Forgot Password?</a>
-                    </form>
-                    <hr>
-                    <div class="text-center">
-                        <p>Don't have an account? <a href="{% url 'user-register' %}">Register here</a></p>
+                        {% endif %}
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           placeholder="Enter your username" required>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           placeholder="Enter your password" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn auth-btn auth-btn-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i> Login to Your Account
+                            </button>
+                        </form>
+                        <div class="auth-links">
+                            <a href="{% url 'forgot-password' %}">
+                                <i class="fas fa-key me-1"></i> Forgot your password?
+                            </a>
+                        </div>
+                        <div class="auth-separator">
+                            <span class="px-2 bg-white">New to Trashmandu?</span>
+                        </div>
+                        <div class="auth-links">
+                            <p>Help make Nepal cleaner and greener!</p>
+                            <a href="{% url 'user-register' %}" class="btn auth-btn auth-btn-primary">
+                                <i class="fas fa-user-plus me-1"></i> Create an Account
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+    <div class="auth-footer">
+        <a href="{% url 'collector-login' %}">
+            <i class="fas fa-truck me-1"></i> Login as Waste Collector
+        </a>
+        <span class="mx-3">|</span>
+        <a href="{% url 'home' %}">
+            <i class="fas fa-home me-1"></i> Back to Home
+        </a>
     </div>
 </div>
 {% endblock %}

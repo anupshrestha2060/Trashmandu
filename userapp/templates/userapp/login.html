@@ -1,87 +1,125 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <title>User Login | User </title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Montserrat', sans-serif;
-            background: linear-gradient(to right, #d8f3dc, #b7e4c7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .login-box {
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-            width: 350px;
-            text-align: center;
-        }
-        .login-box h2 {
-            color: #1b4332;
-            margin-bottom: 25px;
-        }
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 2px solid #95d5b2;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        button {
-            background-color: #40916c;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #2d6a4f;
-        }
-        .message {
-            color: red;
-            margin: 10px 0;
-        }
-        .register-link {
-            margin-top: 15px;
-            font-size: 0.9rem;
-        }
-        .register-link a {
-            color: #1b4332;
-            text-decoration: none;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <form method="POST" class="login-box">
-        {% csrf_token %}
-        <h2>User Login</h2>
+{% extends 'base.html' %}
+{% load static %}
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="message">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    .auth-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(45deg, #2d6a4f, #40916c);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: -60px auto 20px;
+        border: 6px solid white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .auth-icon i {
+        font-size: 32px;
+        color: white;
+    }
+    .form-control:focus {
+        border-color: #40916c;
+        box-shadow: 0 0 0 0.2rem rgba(64, 145, 108, 0.25);
+    }
+    .auth-subtitle {
+        color: #2d6a4f;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
 
-        <input type="text" name="username" placeholder="Username" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <button type="submit">Login</button>
-
-        <div class="register-link">
-            Don't have an account? <a href="{% url 'user-register' %}">Create one</a>
+{% block content %}
+<div class="auth-container" style="background: linear-gradient(135deg, #d8f3dc 0%, #95d5b2 100%); min-height: 100vh;">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card shadow">
+                    <div class="auth-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <h3 class="fw-bold mb-2" style="color: #1b4332;">Trashmandu</h3>
+                            <p class="auth-subtitle">🌿 The Earth is what we all have in common. Let's protect it, together. 🌏</p>
+                            <h4 class="mt-3" style="color: #2d6a4f;">Welcome to Trashmandu</h4>
+                        </div>
+                        {% if messages %}
+                        <div class="messages mb-4">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} py-2 mb-0" style="border-radius: 10px;">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <form method="POST" action="{% url 'user-login' %}">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text" style="background-color: #f8f9fa; border-right: none;">
+                                        <i class="fas fa-user text-muted"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           placeholder="Enter your username" required 
+                                           style="border-left: none;">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text" style="background-color: #f8f9fa; border-right: none;">
+                                        <i class="fas fa-lock text-muted"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           placeholder="Enter your password" required 
+                                           style="border-left: none;">
+                                </div>
+                            </div>
+                            <div class="text-end mb-4">
+                                <a href="#" class="text-decoration-none" style="color: #2d6a4f; font-size: 0.9rem;">
+                                    <i class="fas fa-key me-1"></i> Forgot your password?
+                                </a>
+                            </div>
+                            <div class="d-grid gap-2 mb-4">
+                                <button type="submit" class="btn btn-success btn-lg" 
+                                        style="background: linear-gradient(45deg, #2d6a4f, #40916c); border: none; padding: 12px;">
+                                    <i class="fas fa-sign-in-alt me-2"></i> Login to Dashboard
+                                </button>
+                            </div>
+                        </form>
+                        <div class="text-center mb-4">
+                            <h5 class="mb-3" style="color: #2d6a4f; font-weight: 600;">New to Trashmandu?</h5>
+                            <p class="mb-3" style="color: #40916c;">Help make Nepal cleaner and greener!</p>
+                            <a href="{% url 'user-register' %}" class="btn btn-success mt-2" 
+                               style="background: linear-gradient(45deg, #40916c, #52b788); border: none;">
+                                <i class="fas fa-user-plus me-2"></i> Create New Account
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-footer py-3" style="background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+                        <div class="row text-center g-2 mb-3">
+                            <div class="col-6">
+                                <a href="{% url 'collector-login' %}" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-truck me-1"></i> Login as Waste Collector
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                <a href="{% url 'home' %}" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-home me-1"></i> Back to Home
+                                </a>
+                            </div>
+                        </div>
+                        <div class="text-center" style="color: #2d6a4f; font-size: 0.9rem;">
+                            © 2025 Trashmandu | Made with <i class="fas fa-heart" style="color: #e74c3c;"></i> for a greener Nepal
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </form>
-</body>
-</html>
+    </div>
+</div>
+{% endblock %}

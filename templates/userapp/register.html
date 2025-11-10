@@ -7,21 +7,21 @@
 {% endblock %}
 
 {% block content %}
-<div class="auth-container collector-theme">
+<div class="auth-container">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="auth-card">
                     <div class="auth-header">
-                        Become a Waste Collector
+                        Create Your Account
                     </div>
                     <div class="auth-body">
                         <div class="auth-type-icon">
-                            <i class="fas fa-truck"></i>
+                            <i class="fas fa-user-plus"></i>
                         </div>
                         <div class="text-center mb-4">
-                            <h4 class="fw-bold" style="color: #1a4314;">Join Our Network</h4>
-                            <p class="text-muted">Make a difference while earning with Trashmandu!</p>
+                            <h4 class="fw-bold text-success">Join Trashmandu</h4>
+                            <p class="text-muted">Help make Nepal cleaner and greener, one pickup at a time!</p>
                         </div>
                         {% if messages %}
                         <div class="messages">
@@ -38,10 +38,17 @@
                             <div class="mb-3">
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    <input type="text" class="form-control" id="username" name="username" 
-                                           placeholder="Choose Username" required>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           placeholder="Full Name" required>
                                 </div>
-                                <small class="form-text text-muted">This will be your unique collector ID</small>
+                            </div>
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-at"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           placeholder="Username" required>
+                                </div>
+                                <small class="form-text text-muted">Choose a unique username for your account</small>
                             </div>
                             <div class="mb-3">
                                 <div class="input-group">
@@ -49,30 +56,7 @@
                                     <input type="email" class="form-control" id="email" name="email" 
                                            placeholder="Email Address" required>
                                 </div>
-                                <small class="form-text text-muted">For pickup notifications and updates</small>
-                            </div>
-                            <div class="mb-3">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                                    <input type="tel" class="form-control" id="phone_number" name="phone_number" 
-                                           placeholder="Phone Number" required>
-                                </div>
-                                <small class="form-text text-muted">Your contact number for pickups</small>
-                            </div>
-                            <div class="mb-3">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                                    <input type="text" class="form-control" id="citizenship_id" name="citizenship_id" 
-                                           placeholder="Citizenship ID" required>
-                                </div>
-                                <small class="form-text text-muted">For verification purposes</small>
-                            </div>
-                            <div class="mb-3">
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" required>
-                                </div>
-                                <small class="form-text text-muted">Must be 18 years or older</small>
+                                <small class="form-text text-muted">We'll send pickup confirmations here</small>
                             </div>
                             <div class="mb-3">
                                 <div class="input-group">
@@ -84,27 +68,27 @@
                             <div class="mb-4">
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-key"></i></span>
-                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                    <input type="password" class="form-control" id="confirm" name="confirm" 
                                            placeholder="Confirm Password" required>
                                 </div>
                             </div>
                             <button type="submit" class="btn auth-btn auth-btn-primary">
-                                <i class="fas fa-truck me-2"></i> Register as Collector
+                                <i class="fas fa-user-plus me-2"></i> Create Account
                             </button>
                         </form>
                         <div class="auth-separator">
-                            <span class="px-2 bg-white">Already a collector?</span>
+                            <span class="px-2 bg-white">Already have an account?</span>
                         </div>
                         <div class="auth-links text-center">
-                            <a href="{% url 'collector-login' %}" class="btn btn-outline-success">
+                            <a href="{% url 'user-login' %}" class="btn btn-outline-success">
                                 <i class="fas fa-sign-in-alt me-2"></i> Log In
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="auth-footer">
-                    <a href="{% url 'user-register' %}">
-                        <i class="fas fa-user me-1"></i> Register as User Instead
+                    <a href="{% url 'collector-register' %}">
+                        <i class="fas fa-truck me-1"></i> Register as Waste Collector Instead
                     </a>
                     <span class="mx-3">|</span>
                     <a href="{% url 'home' %}">
