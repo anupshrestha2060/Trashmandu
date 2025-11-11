@@ -29,7 +29,31 @@
       </div>
     {% endif %}
 
-    {# Profile update removed per request - profile editing handled elsewhere or disabled #}
+    <div class="card">
+      <h2>Profile</h2>
+      <p class="small">Username: <strong>{{ user.username }}</strong></p>
+      <p class="small">Name: <strong>{{ user.get_full_name|default:user.username }}</strong></p>
+
+      <form method="POST" action="" style="margin-top:12px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+        <div class="two-col">
+          <div>
+            <label for="phone">Phone</label>
+            <input type="text" id="phone" name="phone" value="{{ profile.phone_number }}">
+          </div>
+          <div>
+            <label for="citizenship">Citizenship ID</label>
+            <input type="text" id="citizenship" name="citizenship" value="{{ profile.citizenship_id }}">
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <label for="dob">Date of Birth</label>
+          <input type="date" id="dob" name="dob" value="{{ profile.date_of_birth }}">
+        </div>
+        <div style="margin-top:12px"><button type="submit">Save Profile</button></div>
+      </form>
+    </div>
 
     <div class="card">
       <h2>Email</h2>
