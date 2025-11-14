@@ -192,7 +192,7 @@
 </header>
 
 <main>
-    <h2>Welcome to User Dashboard{{ user.first_name }}!</h2>
+    <h2>Welcome to User Dashboard {{ user.first_name }}!</h2>
     <p>Notify your plastic waste and schedule a pickup.</p>
 
     <form method="POST" action="{% url 'user-dashboard' %}">

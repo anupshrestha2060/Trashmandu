@@ -97,9 +97,11 @@ MESSAGE_TAGS = {
     messages.SUCCESS: 'success',
 }
 # For now, use this while working on Collector login
+# For now, use this while working on Collector login
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/collector/login/'
 LOGOUT_REDIRECT_URL = '/collector/login/'
+
 # Development: print emails to console
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'Trashmandu <no-reply@trashmandu.com>'
