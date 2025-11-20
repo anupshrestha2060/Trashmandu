@@ -99,8 +99,15 @@ WSGI_APPLICATION = 'trashmandu.wsgi.application'
 # -------------------------
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'trashmandu_db',     # your database name in MySQL
+        'USER': 'root',              # your MySQL username (usually root)
+        'PASSWORD': '',              # your MySQL password (set it if you have one)
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        }
     }
 }
 
