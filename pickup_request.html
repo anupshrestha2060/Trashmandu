@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Request Pickup - Trashmandu</title>
+</head>
+<body>
+    <h2>Schedule a Pickup</h2>
+    <form method="post">
+        {% csrf_token %}
+
+        <label for="weight">Waste Weight (kg):</label>
+        <input type="text" id="weight" name="weight" required>
+
+        <label for="location">Pickup Location:</label>
+        <input type="text" id="location" name="location" required>
+
+        <label for="date">Pickup Date:</label>
+        <input type="date" id="date" name="date" required>
+
+        <label for="time">Pickup Time:</label>
+        <input type="time" id="time" name="time" required>
+
+        <button type="submit">Send Request</button>
+    </form>
+</body>
+</html>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+    }
+    h2 {
+        color: #2c3e50;
+    }
+    form {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+    }
+    label {
+        display: block;
+        margin-bottom: 8px;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="date"],
+    input[type="time"] {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+    button {
+        background-color: #28a745;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #218838;
+    }
+</style>
