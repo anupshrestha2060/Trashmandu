@@ -5,6 +5,7 @@
     <title>User Dashboard | Trashmandu</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
     <style>
         body {
@@ -25,10 +26,7 @@
             align-items: center;
         }
 
-        header h1 {
-            margin: 0;
-            font-weight: 700;
-        }
+        header h1 { margin: 0; font-weight: 700; }
 
         header a {
             color: white;
@@ -40,10 +38,7 @@
             transition: background-color 0.3s;
         }
 
-        header a:hover {
-            background-color: white;
-            color: #52b788;
-        }
+        header a:hover { background-color: white; color: #52b788; }
 
         main {
             max-width: 700px;
@@ -54,17 +49,9 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.1);
         }
 
-        main h2 {
-            margin-top: 0;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
+        main h2 { margin-top: 0; font-weight: 700; margin-bottom: 20px; }
 
-        label {
-            display: block;
-            margin: 15px 0 5px;
-            font-weight: 600;
-        }
+        label { display: block; margin: 15px 0 5px; font-weight: 600; }
 
         input, select {
             width: 100%;
@@ -87,26 +74,16 @@
             width: 100%;
         }
 
-        button:hover {
-            background-color: #2d6a4f;
-        }
+        button:hover { background-color: #2d6a4f; }
 
-        #map {
-            height: 300px;
-            border-radius: 12px;
-            margin-top: 20px;
-        }
-
-        .table-responsive {
-            overflow-x: auto;
-        }
+        #map { height: 300px; border-radius: 12px; margin-top: 20px; }
 
         .pickup-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 30px;
             box-shadow: 0 0 15px rgba(0,0,0,0.05);
-            table-layout: fixed; /* helps columns fit */
+            table-layout: fixed;
         }
 
         .pickup-table th, .pickup-table td {
@@ -125,65 +102,31 @@
             font-size: 0.85rem;
         }
 
-        tr:hover {
-            background-color: #f1f9f1;
-        }
+        tr:hover { background-color: #f1f9f1; }
 
-        .status-pending {
-            color: #e07a5f;
-            font-weight: 700;
-        }
+        .status-pending { color: #e07a5f; font-weight: 700; }
+        .status-accepted { color: #52b788; font-weight: 700; }
+        .status-rejected { color: #b00020; font-weight: 700; }
 
-        .status-accepted {
-            color: #52b788;
-            font-weight: 700;
-        }
+        .pickup-table colgroup col:nth-child(1) { width: 12%; }
+        .pickup-table colgroup col:nth-child(2) { width: 8%; }
+        .pickup-table colgroup col:nth-child(3) { width: 10%; }
+        .pickup-table colgroup col:nth-child(4) { width: 20%; }
+        .pickup-table colgroup col:nth-child(5) { width: 20%; }
+        .pickup-table colgroup col:nth-child(6) { width: 10%; }
+        .pickup-table colgroup col:nth-child(7) { width: 8%; }
+        .pickup-table colgroup col:nth-child(8) { width: 12%; }
 
-        .status-rejected {
-            color: #b00020;
-            font-weight: 700;
-        }
-        /* column widths to make table fit nicely */
-        .pickup-table colgroup col:nth-child(1) { width: 12%; } /* Phone */
-        .pickup-table colgroup col:nth-child(2) { width: 8%; }  /* Weight */
-        .pickup-table colgroup col:nth-child(3) { width: 10%; } /* Total */
-        .pickup-table colgroup col:nth-child(4) { width: 20%; } /* Collector */
-        .pickup-table colgroup col:nth-child(5) { width: 20%; } /* Location */
-        .pickup-table colgroup col:nth-child(6) { width: 10%; } /* Date */
-        .pickup-table colgroup col:nth-child(7) { width: 8%; }  /* Time */
-        .pickup-table colgroup col:nth-child(8) { width: 12%; } /* Status */
-
-        .truncate {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: block;
-        }
-
-        .collector-cell {
-            font-size: 0.95rem;
-            color: #344e41;
-        }
+        .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+        .collector-cell { font-size: 0.95rem; color: #344e41; }
 
         @media (max-width: 800px) {
             .pickup-table colgroup col:nth-child(4),
-            .pickup-table colgroup col:nth-child(5) {
-                width: 30%;
-            }
+            .pickup-table colgroup col:nth-child(5) { width: 30%; }
             .pickup-table th, .pickup-table td { font-size: 0.9rem; padding: 8px; }
         }
     </style>
 </head>
-
-<script>
-    function calculateTotal() {
-        const weight = parseFloat(document.getElementById('weight').value) || 0;
-        const rate = 9;  // Rs. 9 per kg
-        const total = weight * rate;
-        document.getElementById('totalAmount').innerText = total.toFixed(2);
-        document.getElementById('total').value = total.toFixed(2);
-    }
-</script>
 
 <body>
 <header>
@@ -195,11 +138,13 @@
     <h2>Welcome to User Dashboard {{ user.first_name }}!</h2>
     <p>Notify your plastic waste and schedule a pickup.</p>
 
-    <form method="POST" action="{% url 'user-dashboard' %}">
+    <form method="POST" action="{% url 'user-dashboard' %}" onsubmit="return validateForm()">
         {% csrf_token %}
 
         <label for="phone">Phone Number</label>
-        <input type="text" id="phone" name="phone" placeholder="98XXXXXXXX" required />
+        <input type="text" id="phone" name="phone" placeholder="98XXXXXXXX" required
+               pattern="\d{10}" title="Please enter exactly 10 digits" maxlength="10" 
+               oninput="this.value = this.value.replace(/[^0-9]/g,'');"/>
 
         <label for="weight">Plastic Waste Weight (kg)</label>
         <input type="number" id="weight" name="weight" min="1" required oninput="calculateTotal()" />
@@ -228,7 +173,10 @@
 
     {% if pickup_requests.exists %}
     <h3>Your Pickup Requests</h3>
-    <table>
+    <table class="pickup-table">
+        <colgroup>
+            <col><col><col><col><col><col><col><col>
+        </colgroup>
         <thead>
             <tr>
                 <th>Phone</th>
@@ -245,20 +193,26 @@
             {% for req in pickup_requests %}
             <tr>
                 <td>{{ req.phone }}</td>
-                <td>{{ req.total_weight|default:0 }}</td>
-                <td>Rs. {{ req.total_amount|default:0 }}</td>
-                <td>
-                    {% if req.assigned_collector and req.status == 'Accepted' %}
-                        {{ req.assigned_collector.user.get_full_name|default:req.assigned_collector.user.username }}<br>
-                        <small>{{ req.assigned_collector.phone_number }}</small>
+                <td>{{ req.get_total_weight|floatformat:2 }}</td>
+                <td>Rs. {{ req.get_total_amount|floatformat:2 }}</td>
+                <td class="collector-cell">
+                    {% if req.assigned_collector and req.status == 'accepted' %}
+                        <strong>{{ req.assigned_collector.first_name|default:req.assigned_collector.username }}</strong><br>
+                        <small style="color: #666;">{{ req.assigned_collector.username }}</small>
                     {% else %}
-                        -
+                        <span style="color: #999;">-</span>
                     {% endif %}
                 </td>
-                <td>{{ req.location }}</td>
-                <td>{{ req.scheduled_date }}</td>
-                <td>{{ req.scheduled_time }}</td>
-                <td class="status-{{ req.status|lower }}">{{ req.status }}</td>
+                <td class="truncate">{{ req.location }}</td>
+                <td>{{ req.scheduled_date|date:"M d, Y" }}</td>
+                <td>{{ req.scheduled_time|time:"g:i a" }}</td>
+                <td class="status-{{ req.status|lower }}">
+                    {% if req.status == 'pending' %} Pending
+                    {% elif req.status == 'accepted' %} Accepted
+                    {% elif req.status == 'completed' %} Completed
+                    {% else %} {{ req.status }}
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -268,10 +222,43 @@
     {% endif %}
 </main>
 
+<script>
+    // Restrict phone input and calculate total
+    function calculateTotal() {
+        const weight = parseFloat(document.getElementById('weight').value) || 0;
+        const rate = 9;
+        const total = weight * rate;
+        document.getElementById('totalAmount').innerText = total.toFixed(2);
+        document.getElementById('total').value = total.toFixed(2);
+    }
+
+    // Set min date to today
+    const dateInput = document.getElementById('date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('min', today);
+
+    // Form validation
+    function validateForm() {
+        const phone = document.getElementById('phone').value;
+        const date = document.getElementById('date').value;
+
+        if (!/^\d{10}$/.test(phone)) {
+            alert("Phone number must be exactly 10 digits!");
+            return false;
+        }
+
+        if (new Date(date) < new Date().setHours(0,0,0,0)) {
+            alert("Pickup date cannot be in the past!");
+            return false;
+        }
+
+        return true;
+    }
+</script>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    const map = L.map('map').setView([27.7172, 85.3240], 13); // Kathmandu default
-
+    const map = L.map('map').setView([27.7172, 85.3240], 13); 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
@@ -303,6 +290,5 @@
         updateCoords(27.7172, 85.3240);
     }
 </script>
-
 </body>
 </html>

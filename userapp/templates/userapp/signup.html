@@ -1,0 +1,17 @@
+<!-- userapp/templates/userapp/signup.html -->
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Signup - Trashmandu</title>
+</head>
+<body>
+    <h1>Sign Up as User</h1>
+    <form method="POST" action="{% url 'user:signup' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Sign Up</button>
+    </form>
+</body>
+</html>

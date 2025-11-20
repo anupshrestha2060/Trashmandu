@@ -1,261 +1,239 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.urls import reverse_lazy
-from django.contrib.auth import logout
-from django.contrib.auth.views import LoginView
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django import forms
-from datetime import datetime
-from django.db import transaction, IntegrityError
-from django.views.decorators.http import require_POST
-import random
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth import login as auth_login
-from django.contrib.auth import authenticate
-
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils.crypto import get_random_string
 from .models import CollectorProfile
 from userapp.models import PickupRequest
-from django.db.models import Sum, F, ExpressionWrapper, FloatField
+import re
 
-# Age validation function
-def validate_age(value):
-    today = datetime.today().date()
-    age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
-    if age < 18:
-        raise forms.ValidationError("You must be at least 18 years old to register as a collector.")
+# -----------------------------
+# HELPER FUNCTION
+# -----------------------------
+def is_valid_name(name):
+    return bool(re.match(r"^[a-zA-Z\s]+$", name.strip()))
 
-# Form for profile creation
-class CollectorProfileForm(forms.ModelForm):
-    class Meta:
-        model = CollectorProfile
-        fields = ['phone_number', 'citizenship_id', 'date_of_birth']
-
-    def clean_date_of_birth(self):
-        dob = self.cleaned_data['date_of_birth']
-        validate_age(dob)
-        return dob
-
-# Collector login logic
-class CollectorLoginView(LoginView):
-    template_name = 'collectorapp/login.html'
-    redirect_authenticated_user = True
-
-    def get_success_url(self):
-        user = self.request.user
-        if hasattr(user, 'collectorprofile'):
-            return reverse_lazy('collector-dashboard')
-        else:
-            logout(self.request)
-            messages.error(self.request, "You are not registered as a collector.")
-            return reverse_lazy('collector-login')
-
-# Collector dashboard view
-@login_required
-def collector_dashboard(request):
-    # Annotate pickup requests with total weight and total amount (from related PlasticItem)
-    pickup_requests = PickupRequest.objects.filter(
-        status='Pending'
-    ).annotate(
-        total_weight=Sum('plasticitem__weight'),
-        total_amount=Sum(ExpressionWrapper(F('plasticitem__weight') * F('plasticitem__price_at_time'), output_field=FloatField()))
-    ).order_by('-scheduled_date', '-scheduled_time')
-
-    profile = getattr(request.user, 'collectorprofile', None)
-    # Detect whether the PickupRequest model has an 'assigned_collector' field.
-    field_names = [f.name for f in PickupRequest._meta.get_fields()]
-    per_collector_available = 'assigned_collector' in field_names
-
-    # Calculate total kilograms collected by this collector (accepted requests)
-    if per_collector_available:
-        # assigned_collector references CollectorProfile, not User
-        if profile:
-            total_kg = PickupRequest.objects.filter(assigned_collector=profile, status='Accepted').aggregate(total=Sum('plasticitem__weight'))['total'] or 0.0
-        else:
-            total_kg = 0.0
-    else:
-        # assigned_collector not present; per-collector totals not available
-        total_kg = 0.0
-
-    rate_per_kg = 9.0  # Rs 9 per kg
-    net_amount = round(total_kg * rate_per_kg, 2)
-
-    context = {
-        'pickup_requests': pickup_requests,
-        'profile': profile,
-        'user': request.user,
-        'total_kg_collected': total_kg,
-        'rate_per_kg': rate_per_kg,
-        'net_amount': net_amount,
-        'per_collector_available': per_collector_available,
-    }
-    return render(request, 'collectorapp/dashboard.html', context)
-
-# Accept pickup request
-@login_required
-def accept_request(request, request_id):
-    pickup_request = get_object_or_404(PickupRequest, id=request_id)
-    # If model supports assigned_collector, set it; otherwise just mark accepted.
-    field_names = [f.name for f in PickupRequest._meta.get_fields()]
-    if pickup_request.status == 'Pending':
-        pickup_request.status = 'Accepted'
-        if 'assigned_collector' in field_names:
-            try:
-                # assigned_collector is a FK to CollectorProfile
-                collector_profile = getattr(request.user, 'collectorprofile', None)
-                if collector_profile:
-                    setattr(pickup_request, 'assigned_collector', collector_profile)
-            except Exception:
-                # If assignment fails for any reason, ignore and proceed with status change
-                pass
-        pickup_request.save()
-        # Recalculate collector totals (gross kilograms and net amount)
-        collector_profile = getattr(request.user, 'collectorprofile', None)
-        total_kg = 0.0
-        if collector_profile:
-            total_kg = PickupRequest.objects.filter(assigned_collector=collector_profile, status='Accepted').aggregate(total=Sum('plasticitem__weight'))['total'] or 0.0
-        rate_per_kg = 9.0
-        net_amount = round(total_kg * rate_per_kg, 2)
-        messages.success(request, f"Request accepted. Gross collected: {total_kg:.2f} kg — Net amount: Rs. {net_amount:.2f}")
-    else:
-        messages.error(request, "This request cannot be accepted.")
-    return redirect('collector-dashboard')
-
-# Reject pickup request
-@login_required
-def reject_request(request, request_id):
-    pickup_request = get_object_or_404(PickupRequest, id=request_id)
-    field_names = [f.name for f in PickupRequest._meta.get_fields()]
-    # allow reject if pending, or accepted & assigned to this user (if field exists)
-    allowed = False
-    if pickup_request.status == 'Pending':
-        allowed = True
-    elif pickup_request.status == 'Accepted' and 'assigned_collector' in field_names:
-        try:
-            assigned = getattr(pickup_request, 'assigned_collector')
-            # assigned is a CollectorProfile instance; compare its user
-            if assigned and getattr(assigned, 'user', None) == request.user:
-                allowed = True
-        except Exception:
-            allowed = False
-
-    if allowed:
-        pickup_request.status = 'Rejected'
-        if 'assigned_collector' in field_names:
-            try:
-                setattr(pickup_request, 'assigned_collector', None)
-            except Exception:
-                pass
-        pickup_request.save()
-        messages.success(request, "Request rejected successfully.")
-    else:
-        messages.error(request, "This request cannot be rejected.")
-    return redirect('collector-dashboard')
-
-# Logout collector
-@login_required
-def collector_logout(request):
-    logout(request)
-    return redirect('home')
-
-# Collector registration without email verification
+# -----------------------------
+# COLLECTOR REGISTRATION
+# -----------------------------
 def collector_register(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+    if request.method == "POST":
+        name = request.POST.get('name', '').strip()
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        citizenship_id = request.POST.get('citizenship_id', '').strip()
+        date_of_birth = request.POST.get('date_of_birth', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
 
+        if not is_valid_name(name):
+            messages.error(request, "Name must contain only letters and spaces.")
+            return redirect('collector-register')
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect('collector-register')
+        if len(password) < 6:
+            messages.error(request, "Password must be at least 6 characters.")
+            return redirect('collector-register')
         if User.objects.filter(username=username).exists():
-            messages.error(request, 'Username already exists')
+            messages.error(request, "Username already taken.")
             return redirect('collector-register')
 
+        # Check email
+        existing_user = User.objects.filter(email=email).first()
+        if existing_user:
+            try:
+                profile = CollectorProfile.objects.get(user=existing_user)
+                if profile.is_verified:
+                    messages.error(request, "Email already registered.")
+                    return redirect('collector-register')
+                else:
+                    existing_user.delete()
+            except CollectorProfile.DoesNotExist:
+                messages.error(request, "Email already used by another account.")
+                return redirect('collector-register')
+
+        user = User.objects.create_user(username=username, email=email, password=password, first_name=name)
+        user.is_active = False
+        user.save()
+
+        profile = CollectorProfile.objects.create(
+            user=user,
+            phone_number=phone_number,
+            citizenship_id=citizenship_id,
+            date_of_birth=date_of_birth if date_of_birth else '2000-01-01'
+        )
+
+        verification_link = request.build_absolute_uri(f"/collector/verify/{profile.verification_token}/")
         try:
-            with transaction.atomic():
-                # Create user first
-                user = User.objects.create_user(
-                    username=username,
-                    email=email,
-                    password=password
-                )
-                # Then create the collector profile
-                CollectorProfile.objects.create(user=user)
-
-            messages.success(request, 'Collector account created successfully. Please log in.')
+            send_mail(
+                "Trashmandu - Verify your Collector account",
+                f"Hi {name},\n\nClick this link to verify your account:\n{verification_link}\n\nTrashmandu Team",
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False
+            )
+            messages.success(request, "Account created! Check your email to verify your account.")
             return redirect('collector-login')
-
-        except IntegrityError:
-            messages.error(request, 'Error creating collector account')
+        except Exception as e:
+            user.delete()
+            messages.error(request, f"Failed to send verification email. Error: {str(e)}")
             return redirect('collector-register')
 
     return render(request, 'collectorapp/register.html')
 
+# -----------------------------
+# COLLECTOR LOGIN
+# -----------------------------
+def collector_login(request):
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user:
+            try:
+                profile = CollectorProfile.objects.get(user=user)
+            except CollectorProfile.DoesNotExist:
+                messages.error(request, "Not a registered collector account.")
+                return redirect('collector-login')
 
-# Collector profile update (without any email verification flow)
+            if not profile.is_verified:
+                messages.error(request, "Please verify your email before logging in.")
+                return redirect('collector-login')
+
+            login(request, user)
+            messages.success(request, "Welcome back!")
+            return redirect('collector-dashboard')
+        else:
+            messages.error(request, "Invalid credentials!")
+            return redirect('collector-login')
+    return render(request, 'collectorapp/login.html')
+
+# -----------------------------
+# COLLECTOR LOGOUT
+# -----------------------------
+@login_required
+def collector_logout(request):
+    logout(request)
+    messages.success(request, "Logged out successfully!")
+    return redirect('collector-login')
+
+# -----------------------------
+# DASHBOARD
+# -----------------------------
+@login_required
+def collector_dashboard(request):
+    pending_requests = PickupRequest.objects.filter(status='pending').order_by('-scheduled_date', '-scheduled_time')
+    accepted_requests = PickupRequest.objects.filter(status='accepted', assigned_collector=request.user).order_by('-scheduled_date', '-scheduled_time')
+    all_requests = list(pending_requests) + list(accepted_requests)
+    return render(request, 'collectorapp/dashboard.html', {"pickup_requests": all_requests})
+
+# -----------------------------
+# ACCEPT REQUEST
+# -----------------------------
+@login_required
+def accept_request(request, request_id):
+    pickup = get_object_or_404(PickupRequest, id=request_id)
+    pickup.assigned_collector = request.user
+    pickup.status = 'accepted'
+    pickup.save()
+    messages.success(request, "Request accepted successfully!")
+    return redirect('collector-dashboard')
+
+# -----------------------------
+# PROFILE VIEW
+# -----------------------------
 @login_required
 def collector_profile(request):
-    profile = request.user.collectorprofile
-    if request.method == 'POST':
-        action = request.POST.get('action')
+    return render(request, 'collectorapp/profile.html')
 
-        # Update basic profile fields
-        if action == 'update_profile':
-            phone = request.POST.get('phone')
-            citizenship = request.POST.get('citizenship')
-            dob = request.POST.get('dob')
+# -----------------------------
+# VERIFY EMAIL
+# -----------------------------
+def verify_collector(request, token):
+    try:
+        profile = CollectorProfile.objects.get(verification_token=token)
+    except CollectorProfile.DoesNotExist:
+        messages.error(request, "Invalid or expired verification link.")
+        return redirect('collector-login')
 
-            try:
-                dob_date = datetime.strptime(dob, '%Y-%m-%d').date()
-                today = datetime.today().date()
-                age = (today - dob_date).days // 365
-                if age < 18:
-                    messages.error(request, "You must be at least 18 years old.")
-                    return redirect('collector-profile')
-            except ValueError:
-                messages.error(request, "Invalid date of birth format.")
-                return redirect('collector-profile')
+    if profile.is_verified:
+        messages.info(request, "Already verified.")
+    else:
+        profile.is_verified = True
+        profile.user.is_active = True
+        profile.user.save()
+        profile.save()
+        messages.success(request, "Your account has been verified! You can now log in.")
+    return redirect('collector-login')
 
-            if citizenship and len(citizenship) < 8:
-                messages.error(request, "Citizenship ID seems invalid.")
-                return redirect('collector-profile')
+# -----------------------------
+# FORGOT PASSWORD
+# -----------------------------
+def collector_forgot_password(request):
+    if request.method == "POST":
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            profile = CollectorProfile.objects.get(user=user)
 
-            profile.phone_number = phone or profile.phone_number
-            profile.citizenship_id = citizenship or profile.citizenship_id
-            profile.date_of_birth = dob_date
+            if not profile.is_verified:
+                messages.error(request, "This collector account is not verified yet.")
+                return redirect('collector-forgot-password')
+
+            profile.password_reset_token = get_random_string(50)
             profile.save()
-            messages.success(request, "Profile updated successfully.")
-            return redirect('collector-profile')
 
-        # Change password
-        if action == 'change_password':
-            current = request.POST.get('current_password')
-            new = request.POST.get('new_password')
-            confirm = request.POST.get('confirm_password')
-            user = request.user
-            if not user.check_password(current):
-                messages.error(request, "Current password is incorrect.")
-                return redirect('collector-profile')
-            if not new or new != confirm:
-                messages.error(request, "New passwords do not match.")
-                return redirect('collector-profile')
-            user.set_password(new)
-            user.save()
-            # Keep the user logged in after password change
-            update_session_auth_hash(request, user)
-            messages.success(request, "Password changed successfully.")
-            return redirect('collector-profile')
+            reset_link = request.build_absolute_uri(f"/collector/reset-password/{profile.password_reset_token}/")
+            send_mail(
+                "Trashmandu - Reset your password",
+                f"Hi {user.first_name},\n\nClick here to reset your password:\n{reset_link}\n\nTrashmandu Team",
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False
+            )
+            messages.success(request, "Password reset link sent! Check your email.")
+            return redirect('collector-login')
+        except User.DoesNotExist:
+            messages.error(request, "Email not found.")
+            return redirect('collector-forgot-password')
+        except CollectorProfile.DoesNotExist:
+            messages.error(request, "This email is not registered as a collector account.")
+            return redirect('collector-forgot-password')
 
-        # Change email (no verification)
-        if action == 'change_email':
-            new_email = request.POST.get('new_email')
-            if not new_email or '@' not in new_email:
-                messages.error(request, "Please provide a valid email address.")
-                return redirect('collector-profile')
-            user = request.user
-            user.email = new_email
-            user.save()
-            messages.success(request, "Email updated successfully.")
-            return redirect('collector-profile')
+    return render(request, 'collectorapp/forgot_password.html')
 
-    return render(request, 'collectorapp/profile.html', {'profile': profile, 'user': request.user})
+# -----------------------------
+# RESET PASSWORD
+# -----------------------------
+def collector_reset_password(request, token):
+    try:
+        profile = CollectorProfile.objects.get(password_reset_token=token)
+    except CollectorProfile.DoesNotExist:
+        messages.error(request, "Invalid or expired reset link.")
+        return redirect('collector-login')
 
-# Verification-related endpoints were removed — verification is not used.
+    if request.method == "POST":
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect('collector-reset-password', token=token)
+
+        if len(password) < 6:
+            messages.error(request, "Password must be at least 6 characters.")
+            return redirect('collector-reset-password', token=token)
+
+        profile.user.set_password(password)
+        profile.user.save()
+        profile.password_reset_token = None
+        profile.save()
+        messages.success(request, "Password reset successfully! You can now login.")
+        return redirect('collector-login')
+
+    return render(request, 'collectorapp/reset_password.html', {'token': token})

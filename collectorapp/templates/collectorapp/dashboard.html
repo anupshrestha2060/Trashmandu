@@ -213,23 +213,30 @@
           <tbody>
             {% for req in pickup_requests %}
             <tr>
-              <td>{{ req.user.username }}</td>
+              <td>{{ req.user.first_name }} ({{ req.user.username }})</td>
               <td>{{ req.phone }}</td>
-              <td>{{ req.total_weight|default:0 }}</td>
-              <td>Rs. {{ req.total_amount|default:0 }}</td>
+              <td>{{ req.get_total_weight|floatformat:2 }}</td>
+              <td>Rs. {{ req.get_total_amount|floatformat:2 }}</td>
               <td>{{ req.location }}</td>
               <td>{{ req.scheduled_date|date:"F d, Y" }}</td>
               <td>{{ req.scheduled_time|time:"g:i a" }}</td>
-              <td>{{ req.status }}</td>
+              <td>
+                {% if req.status == 'pending' %}
+                  <span style="color: #e07a5f; font-weight: 700;">Pending</span>
+                {% elif req.status == 'accepted' %}
+                  <span style="color: #40916c; font-weight: 700;">Accepted</span>
+                {% elif req.status == 'completed' %}
+                  <span style="color: #2d6a4f; font-weight: 700;">Completed</span>
+                {% endif %}
+              </td>
               <td>
                 <div class="action-buttons">
-                  {% if req.status == 'Pending' %}
+                  {% if req.status == 'pending' %}
                     <a href="{% url 'accept-request' req.id %}" class="btn-accept">Accept</a>
-                    <a href="{% url 'reject-request' req.id %}" class="btn-reject">Reject</a>
-                  {% elif req.status == 'Accepted' and per_collector_available and req.assigned_collector.user == user %}
-                    <a href="{% url 'reject-request' req.id %}" class="btn-reject">Reject</a>
+                  {% elif req.status == 'accepted' %}
+                    <span style="color:#555;">Accepted</span>
                   {% else %}
-                    <span style="color:#555;">No actions</span>
+                    <span style="color:#555;">—</span>
                   {% endif %}
                 </div>
               </td>

@@ -2,14 +2,17 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from datetime import date
+import uuid
+
 
 class CollectorProfile(models.Model):
-    date_of_birth = models.DateField(null=False, default='2000-01-01')  # default date
-    phone_number = models.CharField(max_length=20, null=False, default='N/A')  # default phone
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    citizenship_id = models.CharField(max_length=20, default='NA')
-    def is_adult(self):
-        return (date.today().year - self.date_of_birth.year) >= 18
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    citizenship_id = models.CharField(max_length=50, blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
+    verification_token = models.UUIDField(default=uuid.uuid4, unique=True)
+    password_reset_token = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user.username}'s Collector Profile"
+        return self.user.username

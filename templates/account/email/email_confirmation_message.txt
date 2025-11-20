@@ -1,0 +1,11 @@
+Hi {{ user.get_username }},
+
+Thank you for registering at Trashmandu!
+
+Please confirm your email by clicking the link below:
+
+{{ activate_url }}
+
+Together for a Cleaner, Greener Nepal 🌿
+Best regards,
+The Trashmandu Team 

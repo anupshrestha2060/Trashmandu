@@ -4,21 +4,24 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/auth.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<style>
-    html, body {
-        height: 100%;
-        margin: 0;
-    }
 
-    .auth-container {
+
+<style>
+    .main-content {
         background: linear-gradient(135deg, #d8f3dc 0%, #95d5b2 100%);
-        height: 100vh;
+        min-height: auto;
+        padding: 40px 20px;
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 0;
-        min-height: 100vh;
-        max-height: 100vh;
+    }
+
+    .auth-container {
+        background: transparent;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
     }
 
     .card {
@@ -27,7 +30,6 @@
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         max-width: 420px;
         width: 100%;
-        max-height: calc(100vh - 3rem);
         overflow-y: auto;
     }
 
@@ -156,12 +158,17 @@
                                 </button>
                             </div>
                         </form>
+                        <div class="text-center mb-3">
+                            <a href="{% url 'collector-forgot-password' %}" style="color: #40916c; font-weight: 600; text-decoration: none;">
+                                <i class="fas fa-key me-1"></i> Forgot Password?
+                            </a>
+                        </div>
                         <div class="text-center">
                             <div style="background-color: #ffffff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);">
                                 <h5 class="mb-2" style="color: #1b4332; font-size: 1.2rem; font-weight: 700;">Want to join our collector network?</h5>
                                 <p class="mb-3" style="color: #344e41; font-weight: 500;">Start earning while helping the environment</p>
                                 <a href="{% url 'collector-register' %}" class="btn btn-success">
-                                    <i class="fas fa-truck me-2"></i> Become a Collector
+                                    <i class="fas fa-user-plus me-2"></i> Register Now
                                 </a>
                             </div>
                         </div>

@@ -1,30 +1,63 @@
 from pathlib import Path
 import os
+from django.contrib.messages import constants as messages
 
+# -------------------------
+# BASE CONFIG
+# -------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-#2xif5$##u2@y29&2=0wcsv%t)eho^&d3@vv#+1=tyw71oc7pu'
-
 DEBUG = True
-
 ALLOWED_HOSTS = []
 
-# Application definition
+# -------------------------
+# INSTALLED APPS
+# -------------------------
 INSTALLED_APPS = [
+    # Django default
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # required for allauth
 
     # Custom apps
     'collection',
     'userapp',
     'collectorapp',
     'adminapp',
+
+    # Allauth for registration/email verification
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
 ]
 
+# -------------------------
+# SITE & AUTH
+# -------------------------
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Django default
+    'allauth.account.auth_backends.AuthenticationBackend',  # Allauth
+]
+
+# Allauth configuration
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_LOGIN_METHODS = {'email'}  # login only with email
+LOGIN_REDIRECT_URL = '/user/dashboard/'
+LOGOUT_REDIRECT_URL = '/user/login/'
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "Trashmandu "
+
+# -------------------------
+# MIDDLEWARE
+# -------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -33,19 +66,25 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # Allauth middleware
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
+# -------------------------
+# URL & TEMPLATES
+# -------------------------
 ROOT_URLCONF = 'trashmandu.urls'
 
 TEMPLATES = [
-    {    'DIRS': [os.path.join(BASE_DIR, 'templates')],
+    {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Global template directory
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
-                'django.template.context_processors.request',
+                'django.template.context_processors.request',  # required by allauth
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -55,7 +94,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'trashmandu.wsgi.application'
 
-# Database configuration
+# -------------------------
+# DATABASE
+# -------------------------
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -63,7 +104,9 @@ DATABASES = {
     }
 }
 
-# Password validation
+# -------------------------
+# PASSWORD VALIDATORS
+# -------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -71,37 +114,41 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Localization
+# -------------------------
+# LOCALIZATION
+# -------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# -------------------------
+# STATIC FILES
+# -------------------------
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
-# Default primary key field
+# -------------------------
+# DEFAULT PRIMARY KEY
+# -------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ✅ Login & Register redirects
-LOGIN_REDIRECT_URL = 'user-dashboard'
-LOGOUT_REDIRECT_URL = 'user-login'
-LOGIN_URL = 'user-login'
-
-
-# ✅ Messages framework (optional customization)
-from django.contrib.messages import constants as messages
+# -------------------------
+# MESSAGE TAGS
+# -------------------------
 MESSAGE_TAGS = {
     messages.ERROR: 'danger',
     messages.SUCCESS: 'success',
 }
-# For now, use this while working on Collector login
-# For now, use this while working on Collector login
-LOGIN_REDIRECT_URL = '/'
-LOGIN_URL = '/collector/login/'
-LOGOUT_REDIRECT_URL = '/collector/login/'
 
-# Development: print emails to console
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# -------------------------
+# EMAIL CONFIGURATION (GMAIL SMTP)
+# -------------------------
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = 'anupshrestha865@gmail.com'  # your Gmail
+EMAIL_HOST_PASSWORD = 'pjcvhjrhcughgcji'      # your 16-char app password
 DEFAULT_FROM_EMAIL = 'Trashmandu <no-reply@trashmandu.com>'
