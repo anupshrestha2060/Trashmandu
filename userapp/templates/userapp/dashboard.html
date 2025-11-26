@@ -6,7 +6,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -16,7 +15,6 @@
             min-height: 100vh;
             color: #1b4332;
         }
-
         header {
             padding: 20px;
             background-color: #52b788;
@@ -25,9 +23,7 @@
             justify-content: space-between;
             align-items: center;
         }
-
         header h1 { margin: 0; font-weight: 700; }
-
         header a {
             color: white;
             text-decoration: none;
@@ -37,30 +33,18 @@
             border-radius: 10px;
             transition: background-color 0.3s;
         }
-
         header a:hover { background-color: white; color: #52b788; }
-
         main {
-            max-width: 700px;
+            max-width: 800px;
             margin: 40px auto;
             background: white;
             padding: 30px;
             border-radius: 20px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.1);
         }
-
         main h2 { margin-top: 0; font-weight: 700; margin-bottom: 20px; }
-
         label { display: block; margin: 15px 0 5px; font-weight: 600; }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #95d5b2;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
+        input, select { width: 100%; padding: 10px; border: 2px solid #95d5b2; border-radius: 8px; font-size: 1rem; }
         button {
             margin-top: 25px;
             background-color: #40916c;
@@ -73,11 +57,8 @@
             cursor: pointer;
             width: 100%;
         }
-
         button:hover { background-color: #2d6a4f; }
-
         #map { height: 300px; border-radius: 12px; margin-top: 20px; }
-
         .pickup-table {
             width: 100%;
             border-collapse: collapse;
@@ -85,7 +66,6 @@
             box-shadow: 0 0 15px rgba(0,0,0,0.05);
             table-layout: fixed;
         }
-
         .pickup-table th, .pickup-table td {
             padding: 10px 8px;
             border-bottom: 1px solid #ddd;
@@ -93,7 +73,6 @@
             vertical-align: middle;
             font-size: 0.95rem;
         }
-
         th {
             background-color: #95d5b2;
             color: #1b4332;
@@ -101,33 +80,38 @@
             text-transform: uppercase;
             font-size: 0.85rem;
         }
-
         tr:hover { background-color: #f1f9f1; }
-
         .status-pending { color: #e07a5f; font-weight: 700; }
         .status-accepted { color: #52b788; font-weight: 700; }
-        .status-rejected { color: #b00020; font-weight: 700; }
+        .status-completed { color: #1b4332; font-weight: 700; }
 
-        .pickup-table colgroup col:nth-child(1) { width: 12%; }
-        .pickup-table colgroup col:nth-child(2) { width: 8%; }
-        .pickup-table colgroup col:nth-child(3) { width: 10%; }
-        .pickup-table colgroup col:nth-child(4) { width: 20%; }
-        .pickup-table colgroup col:nth-child(5) { width: 20%; }
-        .pickup-table colgroup col:nth-child(6) { width: 10%; }
-        .pickup-table colgroup col:nth-child(7) { width: 8%; }
-        .pickup-table colgroup col:nth-child(8) { width: 12%; }
+        /* Column widths */
+        .pickup-table colgroup col:nth-child(1) { width:15%; } /* Phone */
+        .pickup-table colgroup col:nth-child(2) { width:8%; }
+        .pickup-table colgroup col:nth-child(3) { width:10%; }
+        .pickup-table colgroup col:nth-child(4) { width:18%; }
+        .pickup-table colgroup col:nth-child(5) { width:20%; }
+        .pickup-table colgroup col:nth-child(6) { width:10%; }
+        .pickup-table colgroup col:nth-child(7) { width:8%; }
+        .pickup-table colgroup col:nth-child(8) { width:14%; }
+
+        /* Phone column styling */
+        .pickup-table td:first-child {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
         .collector-cell { font-size: 0.95rem; color: #344e41; }
 
         @media (max-width: 800px) {
             .pickup-table colgroup col:nth-child(4),
-            .pickup-table colgroup col:nth-child(5) { width: 30%; }
-            .pickup-table th, .pickup-table td { font-size: 0.9rem; padding: 8px; }
+            .pickup-table colgroup col:nth-child(5) { width:30%; }
+            .pickup-table th, .pickup-table td { font-size:0.9rem; padding:8px; }
         }
     </style>
 </head>
-
 <body>
 <header>
     <h1>Trashmandu</h1>
@@ -140,32 +124,25 @@
 
     <form method="POST" action="{% url 'user-dashboard' %}" onsubmit="return validateForm()">
         {% csrf_token %}
-
         <label for="phone">Phone Number</label>
         <input type="text" id="phone" name="phone" placeholder="98XXXXXXXX" required
-               pattern="\d{10}" title="Please enter exactly 10 digits" maxlength="10" 
-               oninput="this.value = this.value.replace(/[^0-9]/g,'');"/>
+               pattern="\d{10}" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'');"/>
 
         <label for="weight">Plastic Waste Weight (kg)</label>
-        <input type="number" id="weight" name="weight" min="1" required oninput="calculateTotal()" />
-
+        <input type="number" id="weight" name="weight" min="1" required oninput="calculateTotal()"/>
         <p><strong>Rate:</strong> Rs. 9 per kg</p>
-
         <p><strong>Total Amount:</strong> Rs. <span id="totalAmount">0</span></p>
-        <input type="hidden" name="total" id="total" />
+        <input type="hidden" name="total" id="total"/>
 
         <label for="date">Pickup Date</label>
-        <input type="date" id="date" name="date" required />
-
+        <input type="date" id="date" name="date" required/>
         <label for="time">Pickup Time</label>
-        <input type="time" id="time" name="time" required />
+        <input type="time" id="time" name="time" required/>
 
         <label for="location">Pickup Location Description</label>
-        <input type="text" id="location" name="location" placeholder="E.g. Tinkune, Bagmati Bridge" required />
-
-        <input type="hidden" id="latitude" name="latitude" />
-        <input type="hidden" id="longitude" name="longitude" />
-
+        <input type="text" id="location" name="location" placeholder="E.g. Tinkune, Bagmati Bridge" required/>
+        <input type="hidden" id="latitude" name="latitude"/>
+        <input type="hidden" id="longitude" name="longitude"/>
         <div id="map"></div>
 
         <button type="submit">Schedule Pickup</button>
@@ -173,6 +150,7 @@
 
     {% if pickup_requests.exists %}
     <h3>Your Pickup Requests</h3>
+    <div style="overflow-x:auto;">
     <table class="pickup-table">
         <colgroup>
             <col><col><col><col><col><col><col><col>
@@ -192,38 +170,38 @@
         <tbody>
             {% for req in pickup_requests %}
             <tr>
-                <td>{{ req.phone }}</td>
+                <td title="{{ req.phone }}">{{ req.phone }}</td>
                 <td>{{ req.get_total_weight|floatformat:2 }}</td>
                 <td>Rs. {{ req.get_total_amount|floatformat:2 }}</td>
                 <td class="collector-cell">
                     {% if req.assigned_collector and req.status == 'accepted' %}
                         <strong>{{ req.assigned_collector.first_name|default:req.assigned_collector.username }}</strong><br>
-                        <small style="color: #666;">{{ req.assigned_collector.username }}</small>
+                        <small style="color:#666;">{{ req.assigned_collector.username }}</small>
                     {% else %}
-                        <span style="color: #999;">-</span>
+                        <span style="color:#999;">-</span>
                     {% endif %}
                 </td>
-                <td class="truncate">{{ req.location }}</td>
+                <td class="truncate" title="{{ req.location }}">{{ req.location }}</td>
                 <td>{{ req.scheduled_date|date:"M d, Y" }}</td>
                 <td>{{ req.scheduled_time|time:"g:i a" }}</td>
                 <td class="status-{{ req.status|lower }}">
-                    {% if req.status == 'pending' %} Pending
-                    {% elif req.status == 'accepted' %} Accepted
-                    {% elif req.status == 'completed' %} Completed
-                    {% else %} {{ req.status }}
-                    {% endif %}
+                    {% if req.status == 'pending' %}Pending
+                    {% elif req.status == 'accepted' %}Accepted
+                    {% elif req.status == 'completed' %}Completed
+                    {% else %}{{ req.status }}{% endif %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
         <p>You have no pickup requests yet.</p>
     {% endif %}
 </main>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Restrict phone input and calculate total
     function calculateTotal() {
         const weight = parseFloat(document.getElementById('weight').value) || 0;
         const rate = 9;
@@ -232,63 +210,56 @@
         document.getElementById('total').value = total.toFixed(2);
     }
 
-    // Set min date to today
     const dateInput = document.getElementById('date');
     const today = new Date().toISOString().split('T')[0];
     dateInput.setAttribute('min', today);
 
-    // Form validation
     function validateForm() {
         const phone = document.getElementById('phone').value;
         const date = document.getElementById('date').value;
-
-        if (!/^\d{10}$/.test(phone)) {
-            alert("Phone number must be exactly 10 digits!");
-            return false;
-        }
-
-        if (new Date(date) < new Date().setHours(0,0,0,0)) {
-            alert("Pickup date cannot be in the past!");
-            return false;
-        }
-
+        if (!/^\d{10}$/.test(phone)) { alert("Phone number must be exactly 10 digits!"); return false; }
+        if (new Date(date) < new Date().setHours(0,0,0,0)) { alert("Pickup date cannot be in the past!"); return false; }
         return true;
     }
-</script>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    const map = L.map('map').setView([27.7172, 85.3240], 13); 
+    const map = L.map('map').setView([27.7172, 85.3240], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    const marker = L.marker([27.7172, 85.3240], { draggable: true }).addTo(map)
+    const marker = L.marker([27.7172, 85.3240], {draggable:true}).addTo(map)
         .bindPopup('Drag me to your pickup location!').openPopup();
 
-    function updateCoords(lat, lng) {
+    function updateCoords(lat,lng) {
         document.getElementById('latitude').value = lat;
         document.getElementById('longitude').value = lng;
+
+        // Reverse geocode
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+        .then(response => response.json())
+        .then(data => {
+            if(data && data.display_name) {
+                document.getElementById('location').value = data.display_name;
+                marker.bindPopup(data.display_name).openPopup();
+            }
+        })
+        .catch(err => console.log("Reverse geocoding failed:", err));
     }
 
-    marker.on('dragend', function () {
+    marker.on('dragend', function(){
         const pos = marker.getLatLng();
         updateCoords(pos.lat.toFixed(6), pos.lng.toFixed(6));
     });
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function (position) {
+    if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(function(position){
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            map.setView([lat, lng], 15);
-            marker.setLatLng([lat, lng]);
+            map.setView([lat,lng],15);
+            marker.setLatLng([lat,lng]);
             updateCoords(lat.toFixed(6), lng.toFixed(6));
-        }, function () {
-            updateCoords(27.7172, 85.3240);
-        });
-    } else {
-        updateCoords(27.7172, 85.3240);
-    }
+        }, function(){ updateCoords(27.7172,85.3240); });
+    } else { updateCoords(27.7172,85.3240); }
 </script>
 </body>
 </html>

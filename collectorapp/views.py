@@ -86,6 +86,7 @@ def collector_register(request):
 
     return render(request, 'collectorapp/register.html')
 
+
 # -----------------------------
 # COLLECTOR LOGIN
 # -----------------------------
@@ -113,6 +114,7 @@ def collector_login(request):
             return redirect('collector-login')
     return render(request, 'collectorapp/login.html')
 
+
 # -----------------------------
 # COLLECTOR LOGOUT
 # -----------------------------
@@ -122,27 +124,74 @@ def collector_logout(request):
     messages.success(request, "Logged out successfully!")
     return redirect('collector-login')
 
+
 # -----------------------------
 # DASHBOARD
 # -----------------------------
 @login_required
 def collector_dashboard(request):
+    collector_profile = get_object_or_404(CollectorProfile, user=request.user)
+    
+    # Pending pickup requests (all)
     pending_requests = PickupRequest.objects.filter(status='pending').order_by('-scheduled_date', '-scheduled_time')
-    accepted_requests = PickupRequest.objects.filter(status='accepted', assigned_collector=request.user).order_by('-scheduled_date', '-scheduled_time')
+    
+    # Accepted pickup requests by this collector
+    accepted_requests = PickupRequest.objects.filter(
+        assigned_collector=request.user,
+        status='accepted'
+    ).order_by('-scheduled_date', '-scheduled_time')
+    
     all_requests = list(pending_requests) + list(accepted_requests)
-    return render(request, 'collectorapp/dashboard.html', {"pickup_requests": all_requests})
+
+    # Total collected weight (sum over related PlasticItems)
+    accepted_and_completed = PickupRequest.objects.filter(
+        assigned_collector=request.user,
+        status__in=['accepted', 'completed']
+    )
+    total_collected = sum(req.get_total_weight() for req in accepted_and_completed)
+
+    rate_per_kg = 9
+    net_amount = total_collected * rate_per_kg
+
+    context = {
+        "pickup_requests": all_requests,
+        "profile": collector_profile,
+        "total_kg_collected": total_collected,
+        "rate_per_kg": rate_per_kg,
+        "net_amount": net_amount,
+    }
+    return render(request, 'collectorapp/dashboard.html', context)
 
 # -----------------------------
 # ACCEPT REQUEST
 # -----------------------------
 @login_required
 def accept_request(request, request_id):
-    pickup = get_object_or_404(PickupRequest, id=request_id)
+    pickup = get_object_or_404(PickupRequest, id=request_id, status='pending')
     pickup.assigned_collector = request.user
     pickup.status = 'accepted'
     pickup.save()
     messages.success(request, "Request accepted successfully!")
     return redirect('collector-dashboard')
+
+
+# -----------------------------
+# REJECT REQUEST
+# -----------------------------
+@login_required
+def reject_request(request, request_id):
+    pickup = get_object_or_404(PickupRequest, id=request_id, assigned_collector=request.user)
+    
+    if pickup.status == 'accepted':
+        pickup.assigned_collector = None
+        pickup.status = 'pending'
+        pickup.save()
+        messages.success(request, "Request has been rejected and is now pending.")
+    else:
+        messages.error(request, "You cannot reject this request.")
+    
+    return redirect('collector-dashboard')
+
 
 # -----------------------------
 # PROFILE VIEW
@@ -150,6 +199,7 @@ def accept_request(request, request_id):
 @login_required
 def collector_profile(request):
     return render(request, 'collectorapp/profile.html')
+
 
 # -----------------------------
 # VERIFY EMAIL
@@ -170,6 +220,7 @@ def verify_collector(request, token):
         profile.save()
         messages.success(request, "Your account has been verified! You can now log in.")
     return redirect('collector-login')
+
 
 # -----------------------------
 # FORGOT PASSWORD
@@ -206,6 +257,7 @@ def collector_forgot_password(request):
             return redirect('collector-forgot-password')
 
     return render(request, 'collectorapp/forgot_password.html')
+
 
 # -----------------------------
 # RESET PASSWORD
